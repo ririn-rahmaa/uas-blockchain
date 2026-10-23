@@ -33,6 +33,18 @@ Token ERC-20 untuk simulasi donasi. Kontrak mencetak token awal kepada pemilik s
 
 Kontrak utama yang mengelola alur donasi dan penyaluran bantuan. Kontrak menggunakan struktur data `Donation`, `Recipient`, `Allocation`, dan `Disbursement`, serta enumerasi status donasi dan pencairan.
 
+DonationStatus 
+- RECEIVED = 0
+- ALLOCATED = 1
+- DISBURSED = 2
+
+DisbursementStatus
+- PENDING = 0
+- APPROVED = 1
+- REJECTED = 2
+
+
+
 Komponen OpenZeppelin yang digunakan meliputi:
 
 - `ERC20` dan `Ownable` untuk token simulasi.
