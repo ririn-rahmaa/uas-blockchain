@@ -66,9 +66,13 @@ async function main() {
   );
 
   const token = await tokenFactory.deploy();
+  const tokenDeployTx = token.deploymentTransaction();
+
   await token.waitForDeployment();
 
   console.log("\nMockToken deployed:", await token.getAddress());
+  console.log("MockToken deployment transaction:", tokenDeployTx.hash);
+  console.log("MockToken deployment block:", (await tokenDeployTx.wait()).blockNumber);
 
   // 2. Deploy DisasterDonation
   const donationArtifact = await loadArtifact(
@@ -82,9 +86,13 @@ async function main() {
   );
 
   const donation = await donationFactory.deploy(await token.getAddress());
+  const donationDeployTx = donation.deploymentTransaction();
+
   await donation.waitForDeployment();
 
   console.log("DisasterDonation deployed:", await donation.getAddress());
+  console.log("DisasterDonation deployment transaction:", donationDeployTx.hash);
+  console.log("DisasterDonation deployment block:", (await donationDeployTx.wait()).blockNumber);
 
   // 3. Atur role pengguna
   await send(
