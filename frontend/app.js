@@ -53,6 +53,18 @@ async function detectRole(address) {
   return roles.length ? roles.join(", ") : "Belum memiliki role";
 }
 
+function updateRolePanels(roleText) {
+  const roles =
+    roleText === "Belum memiliki role"
+      ? []
+      : roleText.split(",").map((role) => role.trim());
+
+  document.querySelectorAll("[data-role-panel]").forEach((panel) => {
+    const requiredRole = panel.dataset.rolePanel;
+    panel.style.display = roles.includes(requiredRole) ? "" : "none";
+  });
+}
+
 async function updateRole(enabled) {
   if (!donation || !account) {
     toast("Hubungkan wallet terlebih dahulu.");
@@ -168,6 +180,7 @@ function activity(label, amount, status, hash) {
     body.querySelectorAll("tr").length
   } aktivitas`;
 }
+
 function updateActivity(hash, status) {
   const tr = [...$("activityBody").querySelectorAll("tr")].find(
     (r) => r.dataset.hash === hash,
@@ -177,6 +190,7 @@ function updateActivity(hash, status) {
   p.textContent = status;
   p.classList.toggle("pending", status === "Pending");
 }
+
 async function connect() {
   if (!window.ethereum) {
     toast("MetaMask tidak ditemukan. Pasang ekstensi MetaMask.");
@@ -215,6 +229,7 @@ async function connect() {
 
     const role = await detectRole(account);
     $("activeRole").textContent = `Role: ${role}`;
+    updateRolePanels(role);
 
     const adminAddress = await donation.admin();
     const isAdmin = adminAddress.toLowerCase() === account.toLowerCase();
