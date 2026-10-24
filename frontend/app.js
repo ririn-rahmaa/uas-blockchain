@@ -105,6 +105,7 @@ async function updateRole(enabled) {
     // Baca ulang role setelah transaksi berhasil.
     const role = await detectRole(account);
     $("activeRole").textContent = `Role: ${role}`;
+    updateRolePanels(role);
 
     $("roleMessage").textContent = `${
       enabled ? "Role berhasil diberikan." : "Role berhasil dicabut."
