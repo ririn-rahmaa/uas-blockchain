@@ -28,6 +28,11 @@ const DONATION_ABI = [
   "function setVolunteer(address,bool)",
   "function setAuditor(address,bool)",
   "function setRegulator(address,bool)",
+
+  "function requestDisbursement(uint256 allocationId,uint256 amount,bytes32 documentHash)",
+  "function getDisbursement(uint256 requestId) view returns (tuple(uint256 allocationId,uint256 amount,bytes32 documentHash,uint8 status,bytes32 rejectionReasonHash))",
+  "function approveDisbursement(uint256 requestId)",
+  "function rejectDisbursement(uint256 requestId,bytes32 reasonHash)",
 ];
 const short = (s) => (s ? `${s.slice(0, 8)}…${s.slice(-6)}` : "—");
 
@@ -62,6 +67,16 @@ function updateRolePanels(roleText) {
   document.querySelectorAll("[data-role-panel]").forEach((panel) => {
     const requiredRole = panel.dataset.rolePanel;
     panel.style.display = roles.includes(requiredRole) ? "" : "none";
+  });
+
+  document.querySelectorAll("[data-role-access]").forEach((panel) => {
+    const allowedRoles = panel.dataset.roleAccess
+      .split(",")
+      .map((role) => role.trim());
+
+    panel.style.display = allowedRoles.some((role) => roles.includes(role))
+      ? ""
+      : "none";
   });
 }
 
@@ -434,6 +449,248 @@ async function donate() {
     }
   }
 }
+
+async function submitDisbursement() {
+  if (!donation || !account) return;
+
+  try {
+    const allocationId = BigInt(
+      document.getElementById("disbursementAllocationId").value,
+    );
+
+    const rawAmount = document
+      .getElementById("disbursementAmount")
+      .value.trim();
+
+    const documentHash = document
+      .getElementById("disbursementDocumentHash")
+      .value.trim();
+
+    if (allocationId < 1n) {
+      throw new Error("ID alokasi harus minimal 1.");
+    }
+
+    if (!rawAmount || Number(rawAmount) <= 0) {
+      throw new Error("Jumlah penyaluran harus lebih besar dari 0.");
+    }
+
+    if (!/^0x[0-9a-fA-F]{64}$/.test(documentHash)) {
+      throw new Error(
+        "Hash dokumen harus diawali 0x dan memiliki 64 karakter heksadesimal.",
+      );
+    }
+
+    if (!(await donation.amils(account))) {
+      throw new Error("Wallet yang terhubung bukan Amil.");
+    }
+
+    const amount = ethers.parseUnits(rawAmount, 18);
+
+    const tx = await donation.requestDisbursement(
+      allocationId,
+      amount,
+      documentHash,
+    );
+
+    document.getElementById("disbursementMessage").textContent =
+      "Transaksi dikirim. Menunggu konfirmasi blockchain...";
+
+    await tx.wait();
+
+    document.getElementById("disbursementMessage").textContent =
+      "Pengajuan penyaluran berhasil dicatat.";
+
+    document.getElementById("disbursementAllocationId").value = "";
+    document.getElementById("disbursementAmount").value = "";
+    document.getElementById("disbursementDocumentHash").value = "";
+  } catch (error) {
+    console.error(error);
+
+    document.getElementById("disbursementMessage").textContent =
+      error.shortMessage || error.reason || error.message;
+  }
+}
+
+async function processDisbursement(approveRequest) {
+  if (!donation || !account) {
+    toast("Hubungkan wallet terlebih dahulu.");
+    return;
+  }
+
+  const messageEl = document.getElementById("auditorMessage");
+  const approveBtn = document.getElementById("approveDisbursementBtn");
+  const rejectBtn = document.getElementById("rejectDisbursementBtn");
+
+  try {
+    const rawId = document.getElementById("auditorRequestId").value.trim();
+
+    if (!/^\d+$/.test(rawId) || BigInt(rawId) < 1n) {
+      throw new Error("ID pengajuan harus berupa bilangan bulat minimal 1.");
+    }
+
+    if (!(await donation.auditors(account))) {
+      throw new Error("Hanya Auditor yang dapat memproses pengajuan.");
+    }
+
+    const requestId = BigInt(rawId);
+
+    // Baca ulang status untuk mencegah memproses pengajuan yang sudah selesai.
+    const req = await donation.getDisbursement(requestId);
+
+    if (Number(req.status) !== 0) {
+      throw new Error("Pengajuan ini tidak lagi berstatus PENDING.");
+    }
+
+    let tx;
+
+    approveBtn.disabled = true;
+    rejectBtn.disabled = true;
+
+    if (approveRequest) {
+      messageEl.textContent = "Konfirmasikan persetujuan melalui MetaMask...";
+      tx = await donation.approveDisbursement(requestId);
+    } else {
+      const reason = document.getElementById("rejectionReason").value.trim();
+
+      if (!reason) {
+        throw new Error("Masukkan alasan penolakan terlebih dahulu.");
+      }
+
+      // Hanya hash alasan yang dikirim ke blockchain.
+      const reasonHash = ethers.keccak256(ethers.toUtf8Bytes(reason));
+
+      messageEl.textContent = "Konfirmasikan penolakan melalui MetaMask...";
+      tx = await donation.rejectDisbursement(requestId, reasonHash);
+    }
+
+    messageEl.textContent = `Transaksi ${tx.hash} dikirim. Menunggu konfirmasi...`;
+
+    await tx.wait();
+
+    messageEl.textContent = approveRequest
+      ? "Pengajuan berhasil disetujui."
+      : "Pengajuan berhasil ditolak.";
+
+    messageEl.className = "message success";
+
+    // Baca ulang data agar status terbaru tampil.
+    await loadDisbursement();
+
+    toast(approveRequest ? "Penyaluran disetujui." : "Pengajuan ditolak.");
+  } catch (error) {
+    console.error(error);
+
+    messageEl.textContent =
+      error.shortMessage || error.reason || error.message || "Transaksi gagal.";
+
+    messageEl.className = "message error";
+  } finally {
+    // Tombol akan diaktifkan kembali oleh loadDisbursement()
+    // hanya jika pengajuan masih PENDING.
+    if (donation && account) {
+      try {
+        const isAuditor = await donation.auditors(account);
+
+        if (isAuditor) {
+          await loadDisbursement();
+        } else {
+          approveBtn.disabled = true;
+          rejectBtn.disabled = true;
+        }
+      } catch (error) {
+        console.error(error);
+        approveBtn.disabled = true;
+        rejectBtn.disabled = true;
+      }
+    }
+  }
+}
+
+async function loadDisbursement() {
+  if (!donation || !account) {
+    toast("Hubungkan wallet terlebih dahulu.");
+    return;
+  }
+
+  const messageEl = document.getElementById("auditorMessage");
+  const detailsEl = document.getElementById("auditorRequestDetails");
+  const approveBtn = document.getElementById("approveDisbursementBtn");
+  const rejectBtn = document.getElementById("rejectDisbursementBtn");
+
+  try {
+    const rawId = document.getElementById("auditorRequestId").value.trim();
+
+    if (!/^\d+$/.test(rawId) || BigInt(rawId) < 1n) {
+      throw new Error("ID pengajuan harus berupa bilangan bulat minimal 1.");
+    }
+
+    if (!(await donation.auditors(account))) {
+      throw new Error("Wallet yang terhubung bukan Auditor.");
+    }
+
+    messageEl.textContent = "Membaca pengajuan dari blockchain...";
+    approveBtn.disabled = true;
+    rejectBtn.disabled = true;
+
+    const requestId = BigInt(rawId);
+    const req = await donation.getDisbursement(requestId);
+    const status = Number(req.status);
+
+    const statusText = {
+      0: "PENDING — menunggu pemeriksaan",
+      1: "APPROVED — disetujui",
+      2: "REJECTED — ditolak",
+    };
+
+    const details = [
+      ["ID pengajuan", requestId.toString()],
+      ["ID alokasi", req.allocationId.toString()],
+      ["Jumlah penyaluran", `${ethers.formatUnits(req.amount, 18)} DRT`],
+      ["Hash dokumen", req.documentHash],
+      ["Status", statusText[status] ?? `Status ${status}`],
+      ["Hash alasan penolakan", req.rejectionReasonHash],
+    ];
+
+    detailsEl.replaceChildren();
+
+    for (const [label, value] of details) {
+      const row = document.createElement("div");
+      const labelEl = document.createElement("span");
+      const valueEl = document.createElement("b");
+
+      labelEl.textContent = label;
+      valueEl.textContent = value;
+
+      row.append(labelEl, valueEl);
+      detailsEl.appendChild(row);
+    }
+
+    const isPending = status === 0;
+
+    approveBtn.disabled = !isPending;
+    rejectBtn.disabled = !isPending;
+
+    messageEl.textContent = isPending
+      ? "Pengajuan ditemukan dan menunggu keputusan Auditor."
+      : "Pengajuan sudah diproses. Tombol keputusan dinonaktifkan.";
+
+    messageEl.className = isPending ? "message success" : "message";
+  } catch (error) {
+    console.error(error);
+
+    detailsEl.replaceChildren();
+    messageEl.textContent =
+      error.shortMessage ||
+      error.reason ||
+      error.message ||
+      "Gagal membaca pengajuan.";
+    messageEl.className = "message error";
+
+    approveBtn.disabled = true;
+    rejectBtn.disabled = true;
+  }
+}
+
 function init() {
   $("today").textContent =
     "◷  " +
@@ -467,5 +724,21 @@ function init() {
   $("revokeRoleBtn").addEventListener("click", () => {
     updateRole(false);
   });
+
+  document
+    .getElementById("submitDisbursementBtn")
+    .addEventListener("click", submitDisbursement);
+
+  document
+    .getElementById("loadDisbursementBtn")
+    .addEventListener("click", loadDisbursement);
+
+  document
+    .getElementById("approveDisbursementBtn")
+    .addEventListener("click", () => processDisbursement(true));
+
+  document
+    .getElementById("rejectDisbursementBtn")
+    .addEventListener("click", () => processDisbursement(false));
 }
 document.addEventListener("DOMContentLoaded", init);

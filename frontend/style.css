@@ -712,3 +712,107 @@ footer span {
 #roleSelect {
   cursor: pointer;
 }
+
+/* Form pengajuan penyaluran — konsisten dengan form lainnya */
+#amilDisbursementPanel .formbox input,
+#auditorDisbursementPanel .formbox input,
+#amilDisbursementPanel .formbox select,
+#auditorDisbursementPanel .formbox select {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid #dce2ef;
+  border-radius: 12px;
+  background: #fff;
+  color: #26334d;
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#amilDisbursementPanel .formbox input:focus,
+#auditorDisbursementPanel .formbox input:focus,
+#amilDisbursementPanel .formbox select:focus,
+#auditorDisbursementPanel .formbox select:focus {
+  border-color: #a69af0;
+  box-shadow: 0 0 0 3px rgba(166, 154, 240, 0.15);
+}
+
+#amilDisbursementPanel .formbox input::placeholder,
+#auditorDisbursementPanel .formbox input::placeholder {
+  color: #8490a8;
+  opacity: 1;
+}
+
+/* Jarak label dan input */
+#amilDisbursementPanel .formbox > label,
+#auditorDisbursementPanel .formbox > label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* Input jumlah dan satuan DRT */
+#amilDisbursementPanel .amount {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #dce2ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+#amilDisbursementPanel .amount input {
+  flex: 1;
+  width: 0;
+  min-height: 56px;
+  padding: 10px 4px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+#amilDisbursementPanel .amount input:focus {
+  border: 0;
+  box-shadow: none;
+}
+
+#amilDisbursementPanel .amount:focus-within {
+  border-color: #a69af0;
+  box-shadow: 0 0 0 3px rgba(166, 154, 240, 0.15);
+}
+
+#amilDisbursementPanel .amount b {
+  flex-shrink: 0;
+  margin-left: 12px;
+  color: #8490a8;
+  font-size: 14px;
+}
+
+/* Tombol memenuhi lebar panel */
+#amilDisbursementPanel #submitDisbursementBtn {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 12px;
+}
+
+/* Responsif untuk tombol dan input Auditor */
+#auditorDisbursementPanel .buttons {
+  align-items: stretch;
+}
+
+#auditorDisbursementPanel .buttons input {
+  flex: 1;
+}
+
+#amilDisbursementPanel .formbox .hint,
+#auditorDisbursementPanel .formbox .hint {
+  line-height: 1.6;
+}

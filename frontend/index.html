@@ -72,6 +72,7 @@
       <section
         class="panel"
         id="roleManagement"
+        data-role-access="Admin"
         style="display: none; margin-bottom: 24px"
       >
         <div class="panelhead">
@@ -214,7 +215,10 @@
         </p>
       </section>
 
-      <section class="stats">
+      <section
+        class="stats"
+        data-role-access="Admin,Amil,Volunteer,Auditor,Regulator"
+      >
         <article>
           <div class="statlabel">
             Total donasi tercatat <span class="ico purplebg">↗</span>
@@ -244,7 +248,10 @@
           ><small id="ethBalance">ETH untuk gas: —</small>
         </article>
       </section>
-      <section class="columns">
+      <section
+        class="columns"
+        data-role-access="Admin,Amil,Volunteer,Auditor,Regulator"
+      >
         <article class="panel" id="donation">
           <div class="panelhead">
             <div>
@@ -314,7 +321,155 @@
           </p>
         </article>
       </section>
-      <section class="panel activity" id="activity">
+
+      <!-- PANEL AMIL: PENGAJUAN PENYALURAN -->
+      <section
+        class="panel"
+        id="amilDisbursementPanel"
+        data-role-panel="Amil"
+        style="display: none; margin-bottom: 24px"
+      >
+        <div class="panelhead">
+          <div>
+            <label>AMIL WORKSPACE</label>
+            <h2>Pengajuan Penyaluran</h2>
+            <p>Ajukan penyaluran dana dari alokasi yang sudah tersedia.</p>
+          </div>
+          <span class="badge">Amil only</span>
+        </div>
+
+        <div class="formbox">
+          <label for="disbursementAllocationId">ID alokasi</label>
+          <input
+            id="disbursementAllocationId"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="Contoh: 1"
+          />
+
+          <label
+            for="disbursementAmount"
+            style="display: block; margin-top: 16px"
+          >
+            Jumlah penyaluran (DRT)
+          </label>
+          <div class="amount">
+            <input
+              id="disbursementAmount"
+              type="number"
+              min="0"
+              step="any"
+              placeholder="Contoh: 10"
+            />
+            <b>DRT</b>
+          </div>
+
+          <label
+            for="disbursementDocumentHash"
+            style="display: block; margin-top: 16px"
+          >
+            Hash dokumen pendukung (bytes32)
+          </label>
+          <input
+            id="disbursementDocumentHash"
+            type="text"
+            placeholder="0x + 64 karakter heksadesimal"
+            autocomplete="off"
+          />
+
+          <p class="hint">
+            Masukkan hash dokumen pendukung, bukan data pribadi penerima.
+          </p>
+
+          <div class="buttons">
+            <button id="submitDisbursementBtn" class="primary" disabled>
+              Kirim Pengajuan
+            </button>
+          </div>
+
+          <p id="disbursementMessage" class="message" role="status">
+            Hubungkan wallet Amil untuk mengajukan penyaluran.
+          </p>
+        </div>
+      </section>
+
+      <!-- PANEL AUDITOR: PEMERIKSAAN PENGAJUAN -->
+      <section
+        class="panel"
+        id="auditorDisbursementPanel"
+        data-role-panel="Auditor"
+        style="display: none; margin-bottom: 24px"
+      >
+        <div class="panelhead">
+          <div>
+            <label>AUDITOR WORKSPACE</label>
+            <h2>Pemeriksaan Pengajuan</h2>
+            <p>Periksa pengajuan Amil, kemudian setujui atau tolak.</p>
+          </div>
+          <span class="badge">Auditor only</span>
+        </div>
+
+        <div class="formbox">
+          <label for="auditorRequestId">ID pengajuan penyaluran</label>
+
+          <div class="buttons">
+            <input
+              id="auditorRequestId"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Contoh: 1"
+            />
+            <button id="loadDisbursementBtn" class="secondary" disabled>
+              Baca Pengajuan
+            </button>
+          </div>
+
+          <div
+            id="auditorRequestDetails"
+            class="details"
+            style="margin-top: 16px"
+          >
+            <div>
+              <span>Status</span>
+              <b>Belum dibaca</b>
+            </div>
+          </div>
+
+          <label for="rejectionReason" style="display: block; margin-top: 16px">
+            Alasan penolakan
+          </label>
+          <input
+            id="rejectionReason"
+            type="text"
+            placeholder="Contoh: Dokumen belum lengkap"
+          />
+
+          <p class="hint">
+            Alasan penolakan akan di-hash sebelum dikirim ke blockchain.
+          </p>
+
+          <div class="buttons">
+            <button id="approveDisbursementBtn" class="primary" disabled>
+              Setujui Penyaluran
+            </button>
+            <button id="rejectDisbursementBtn" class="secondary" disabled>
+              Tolak Pengajuan
+            </button>
+          </div>
+
+          <p id="auditorMessage" class="message" role="status">
+            Hubungkan wallet Auditor untuk memeriksa pengajuan.
+          </p>
+        </div>
+      </section>
+
+      <section
+        class="panel activity"
+        data-role-access="Admin,Auditor,Regulator"
+        id="activity"
+      >
         <div class="panelhead">
           <div>
             <label>AUDIT TRAIL</label>
