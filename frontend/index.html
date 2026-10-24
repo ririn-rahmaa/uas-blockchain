@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>DonasiChain — Dashboard Donasi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="#"
+        ><span class="logo">◇</span
+        ><span
+          >Donasi<span class="violet">Chain</span
+          ><small>TRANSPARENCY, TOGETHER</small></span
+        ></a
+      >
+      <p class="navlabel">WORKSPACE</p>
+      <a class="nav active" href="#overview">▦ &nbsp; Overview</a
+      ><a class="nav" href="#donation">↗ &nbsp; Donasi & alokasi</a
+      ><a class="nav" href="#activity">◷ &nbsp; Aktivitas transaksi</a>
+      <div class="sidebottom">
+        <div class="network">
+          <i></i>
+          <div><b>Local network</b><small>Hardhat · Chain 31337</small></div>
+        </div>
+        <div class="tip">
+          <span>✦</span><b>Transparansi dimulai di sini</b>
+          <p>Setiap transaksi dapat ditelusuri melalui blockchain.</p>
+        </div>
+        <small>PROTOTYPE UAS BLOCKCHAIN</small>
+      </div>
+    </aside>
+    <main id="overview">
+      <header>
+        <div class="crumb">Workspace <span>/</span> <b>Overview</b></div>
+        <button id="connectBtn" class="primary">
+          ▣ &nbsp; Connect MetaMask
+        </button>
+      </header>
+      <section class="welcome">
+        <div>
+          <label>DASHBOARD DONASI</label>
+          <h1>Overview</h1>
+          <p>Pantau alokasi dan penyaluran dana dalam satu tempat.</p>
+        </div>
+        <div class="date" id="today">◷ &nbsp; Local demo</div>
+      </section>
+      <section class="wallet">
+        <div class="walleticon">▣</div>
+        <div class="walletcopy">
+          <b id="walletTitle">Wallet belum terhubung</b>
+          <p id="walletDescription">
+            Hubungkan MetaMask ke jaringan Hardhat Local untuk membaca data
+            kontrak dan mengirim transaksi.
+          </p>
+        </div>
+        <div class="walletstate">
+          <div id="activeRole">Role: —</div>
+          <span><i></i><b id="walletStatus">Disconnected</b></span
+          ><code id="walletAddress">—</code>
+        </div>
+      </section>
+
+      <section
+        class="panel"
+        id="roleManagement"
+        style="display: none; margin-bottom: 24px"
+      >
+        <div class="panelhead">
+          <div>
+            <label>ADMINISTRATION</label>
+            <h2>Pengaturan Role</h2>
+            <p>Berikan atau cabut kewenangan wallet pada smart contract.</p>
+          </div>
+          <span class="badge">Admin only</span>
+        </div>
+
+        <div class="formbox">
+          <label for="roleAddress">Alamat wallet</label>
+          <input
+            id="roleAddress"
+            type="text"
+            placeholder="0x..."
+            autocomplete="off"
+          />
+
+          <label for="roleSelect" style="display: block; margin-top: 16px">
+            Pilih role
+          </label>
+          <select id="roleSelect">
+            <option value="amil">Amil</option>
+            <option value="volunteer">Volunteer</option>
+            <option value="auditor">Auditor</option>
+            <option value="regulator">Regulator</option>
+          </select>
+
+          <div class="buttons" style="margin-top: 16px">
+            <button id="grantRoleBtn" class="primary" disabled>
+              Berikan Role
+            </button>
+            <button id="revokeRoleBtn" class="secondary" disabled>
+              Cabut Role
+            </button>
+          </div>
+
+          <p id="roleMessage" class="message" role="status">
+            Hubungkan wallet Admin untuk mengatur role.
+          </p>
+        </div>
+      </section>
+
+      <section class="stats">
+        <article>
+          <div class="statlabel">
+            Total donasi tercatat <span class="ico purplebg">↗</span>
+          </div>
+          <strong id="statDonation">— <small>DRT</small></strong
+          ><small id="donationStatFoot">Menunggu koneksi kontrak</small>
+        </article>
+        <article>
+          <div class="statlabel">
+            Sudah dialokasikan <span class="ico bluebg">⌁</span>
+          </div>
+          <strong id="statAllocated">— <small>DRT</small></strong
+          ><small>Terdata pada kontrak</small>
+        </article>
+        <article>
+          <div class="statlabel">
+            Sudah disalurkan <span class="ico greenbg">✓</span>
+          </div>
+          <strong id="statDisbursed">— <small>DRT</small></strong
+          ><small>Disetujui auditor</small>
+        </article>
+        <article>
+          <div class="statlabel">
+            Saldo wallet <span class="ico amberbg">◉</span>
+          </div>
+          <strong id="statBalance">— <small>DRT</small></strong
+          ><small id="ethBalance">ETH untuk gas: —</small>
+        </article>
+      </section>
+      <section class="columns">
+        <article class="panel" id="donation">
+          <div class="panelhead">
+            <div>
+              <label>INTERAKSI KONTRAK</label>
+              <h2>Demo transaksi</h2>
+              <p>Transaksi ditandatangani melalui wallet yang terhubung.</p>
+            </div>
+            <span class="badge">● On-chain</span>
+          </div>
+          <div class="formbox">
+            <label for="donationAmount">Jumlah donasi <span>(DRT)</span></label>
+            <div class="amount">
+              <input
+                id="donationAmount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value="1"
+              /><b>DRT</b>
+            </div>
+            <p class="hint">
+              Token harus tersedia di wallet dan allowance perlu disetujui
+              sebelum donasi.
+            </p>
+            <div class="buttons">
+              <button id="approveBtn" class="secondary" disabled>
+                1. Approve token</button
+              ><button id="donateBtn" class="primary" disabled>
+                2. Donasi sekarang ↗
+              </button>
+            </div>
+            <p id="transactionMessage" class="message" role="status">
+              Hubungkan wallet untuk mengaktifkan transaksi.
+            </p>
+          </div>
+          <p class="footnote">
+            ⓘ &nbsp; ETH lokal digunakan untuk gas, sedangkan DRT adalah token
+            donasi.
+          </p>
+        </article>
+        <article class="panel">
+          <div class="panelhead">
+            <div>
+              <label>STATUS KONTRAK</label>
+              <h2>Informasi jaringan</h2>
+              <p>Detail koneksi dan deployment aktif.</p>
+            </div>
+            <span class="chain">⛓</span>
+          </div>
+          <div class="details">
+            <div><span>Network</span><b>Hardhat Local</b></div>
+            <div><span>Chain ID</span><code>31337</code></div>
+            <div><span>RPC endpoint</span><code>127.0.0.1:8545</code></div>
+            <div>
+              <span>MockToken</span><code id="tokenAddress">Belum diatur</code>
+            </div>
+            <div>
+              <span>DisasterDonation</span
+              ><code id="donationAddress">Belum diatur</code>
+            </div>
+          </div>
+          <button id="refreshBtn" class="outline full" disabled>
+            ↻ &nbsp; Muat ulang data kontrak
+          </button>
+          <p class="tiny">
+            Alamat kontrak diatur pada konfigurasi <code>app.js</code>.
+          </p>
+        </article>
+      </section>
+      <section class="panel activity" id="activity">
+        <div class="panelhead">
+          <div>
+            <label>AUDIT TRAIL</label>
+            <h2>Aktivitas terbaru</h2>
+            <p>Transaksi yang dilakukan dari dashboard ini.</p>
+          </div>
+          <span class="count" id="activityCount">0 aktivitas</span>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th>AKTIVITAS</th>
+                <th>JUMLAH</th>
+                <th>STATUS</th>
+                <th>TRANSACTION HASH</th>
+              </tr>
+            </thead>
+            <tbody id="activityBody">
+              <tr class="empty">
+                <td colspan="4">
+                  <b>⌁<br />Belum ada aktivitas</b>
+                  <p>Transaksi dari dashboard akan muncul di sini.</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <footer>
+        © 2026 DonasiChain · Prototype UAS Blockchain
+        <span>Built for traceability ◆</span>
+      </footer>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+  </body>
+</html>
