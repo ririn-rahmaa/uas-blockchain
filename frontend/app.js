@@ -13,7 +13,7 @@ const TOKEN_ABI = [
   "function decimals() view returns (uint8)",
 ];
 const DONATION_ABI = [
-  "function donate(uint256)",
+  "function donate(uint256 amount) returns (uint256 donationId)",
   "function getDonation(uint256 donationId) view returns (tuple(address donor,uint256 amount,uint256 allocatedAmount,uint256 disbursedAmount,uint8 status,bool exists))",
   "function nextDonationId() view returns (uint256)",
   "event DonationReceived(uint256 indexed donationId,address indexed donor,uint256 amount)",
@@ -33,6 +33,23 @@ const DONATION_ABI = [
   "function getDisbursement(uint256 requestId) view returns (tuple(uint256 allocationId,uint256 amount,bytes32 documentHash,uint8 status,bytes32 rejectionReasonHash))",
   "function approveDisbursement(uint256 requestId)",
   "function rejectDisbursement(uint256 requestId,bytes32 reasonHash)",
+  "function nextDisbursementId() view returns (uint256)",
+
+  "function nextAllocationId() view returns (uint256)",
+  "function getAllocation(uint256 allocationId) view returns (tuple(uint256 donationId, bytes32 recipientHash, uint256 amount, uint256 disbursedAmount, uint256 reservedAmount, bool exists))",
+  "function allocateDonation(uint256 donationId, bytes32 recipientHash, uint256 amount)",
+
+  "function submitRecipient(bytes32 recipientHash, address wallet, bytes32 documentHash)",
+  "function verifyRecipient(bytes32 recipientHash)",
+  "function approveRecipient(bytes32 recipientHash)",
+  "function getRecipient(bytes32 recipientHash) view returns (tuple(address wallet, address submittedBy, bytes32 documentHash, bool amilVerified, bool auditorVerified, bool exists))",
+
+  "event RecipientSubmitted(bytes32 indexed recipientHash,address indexed wallet,address submittedBy)",
+  "event RecipientVerified(bytes32 indexed recipientHash,address indexed verifier,string verifierRole)",
+  "event DonationAllocated(uint256 indexed allocationId,uint256 indexed donationId,bytes32 indexed recipientHash,uint256 amount)",
+  "event DisbursementRequested(uint256 indexed disbursementId,uint256 indexed allocationId,uint256 amount)",
+  "event DisbursementApproved(uint256 indexed disbursementId,address indexed recipientWallet,uint256 amount)",
+  "event DisbursementRejected(uint256 indexed disbursementId,address indexed auditor,bytes32 reasonHash)",
 ];
 const short = (s) => (s ? `${s.slice(0, 8)}…${s.slice(-6)}` : "—");
 
@@ -62,22 +79,411 @@ function updateRolePanels(roleText) {
   const roles =
     roleText === "Belum memiliki role"
       ? []
-      : roleText.split(",").map((role) => role.trim());
+      : roleText.split(",").map((r) => r.trim());
 
   document.querySelectorAll("[data-role-panel]").forEach((panel) => {
-    const requiredRole = panel.dataset.rolePanel;
-    panel.style.display = roles.includes(requiredRole) ? "" : "none";
-  });
-
-  document.querySelectorAll("[data-role-access]").forEach((panel) => {
-    const allowedRoles = panel.dataset.roleAccess
+    const allowedRoles = panel.dataset.rolePanel
       .split(",")
-      .map((role) => role.trim());
+      .map((r) => r.trim());
 
-    panel.style.display = allowedRoles.some((role) => roles.includes(role))
+    panel.style.display = allowedRoles.some((r) => roles.includes(r))
       ? ""
       : "none";
   });
+
+  document.querySelectorAll("[data-requires-wallet]").forEach((panel) => {
+    panel.hidden = !account || roles.length > 0;
+  });
+}
+
+async function submitDonation() {
+  if (!token || !donation || !account) {
+    setMessage(
+      "donorMessage",
+      "Hubungkan wallet MetaMask terlebih dahulu.",
+      "error",
+    );
+    return;
+  }
+
+  const button = $("submitDonationBtn");
+
+  try {
+    const amountText = $("donorAmount").value.trim();
+
+    if (
+      !amountText ||
+      !Number.isFinite(Number(amountText)) ||
+      Number(amountText) <= 0
+    ) {
+      throw Error("Masukkan nominal donasi yang valid.");
+    }
+
+    const amount = ethers.parseUnits(amountText, 18);
+    const tokenAddress = await token.getAddress();
+    const donationAddress = await donation.getAddress();
+
+    button.disabled = true;
+    setMessage("donorMessage", "Meminta persetujuan token di MetaMask...");
+
+    // Izinkan kontrak donasi mengambil token DRT dari wallet.
+    const approveTx = await token.approve(donationAddress, amount);
+    await approveTx.wait();
+
+    setMessage(
+      "donorMessage",
+      "Persetujuan token berhasil. Mengirim donasi...",
+    );
+
+    const donateTx = await donation.donate(amount);
+    setMessage(
+      "donorMessage",
+      "Transaksi donasi dikirim. Menunggu konfirmasi...",
+    );
+
+    const receipt = await donateTx.wait();
+
+    let donationId = null;
+
+    for (const log of receipt.logs) {
+      try {
+        const parsed = donation.interface.parseLog(log);
+
+        if (parsed?.name === "DonationReceived") {
+          donationId = parsed.args.donationId.toString();
+          break;
+        }
+      } catch {
+        // Abaikan log dari kontrak lain.
+      }
+    }
+
+    $("donorAmount").value = "";
+
+    setMessage(
+      "donorMessage",
+      `Donasi berhasil${
+        donationId ? `! ID Donasi: ${donationId}` : "."
+      } Transaction: ${donateTx.hash}`,
+      "success",
+    );
+
+    await refresh();
+    await loadDonorHistory();
+  } catch (e) {
+    console.error(e);
+    setMessage(
+      "donorMessage",
+      e.shortMessage || e.reason || e.message || "Donasi gagal.",
+      "error",
+    );
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function loadDonorHistory() {
+  const body = $("donorHistoryBody");
+
+  if (!donation || !provider || !account) {
+    setMessage(
+      "donorHistoryMessage",
+      "Hubungkan wallet terlebih dahulu.",
+      "error",
+    );
+    return;
+  }
+
+  try {
+    setMessage("donorHistoryMessage", "Memuat riwayat donasi...");
+    body.replaceChildren();
+
+    const filter = donation.filters.DonationReceived(null, account);
+    const events = await donation.queryFilter(
+      filter,
+      0,
+      await provider.getBlockNumber(),
+    );
+
+    const rows = await Promise.all(
+      events.map(async (event) => {
+        const id = event.args.donationId;
+        const data = await donation.getDonation(id);
+
+        const statuses = ["Diterima", "Dialokasikan", "Tersalurkan"];
+
+        return {
+          id: id.toString(),
+          amount: fmt(data.amount),
+          status: statuses[Number(data.status)] ?? "Tidak diketahui",
+          hash: event.transactionHash,
+          block: event.blockNumber,
+        };
+      }),
+    );
+
+    rows.sort((a, b) => b.block - a.block);
+
+    if (!rows.length) {
+      const row = body.insertRow();
+      const cell = row.insertCell();
+      cell.colSpan = 4;
+      cell.textContent = "Belum ada donasi dari wallet ini.";
+
+      setMessage("donorHistoryMessage", "Belum ada riwayat donasi.");
+      return;
+    }
+
+    for (const item of rows) {
+      const row = body.insertRow();
+
+      row.insertCell().textContent = `#${item.id}`;
+      row.insertCell().textContent = `${item.amount} DRT`;
+      row.insertCell().textContent = item.status;
+
+      const cell = row.insertCell();
+      const link = document.createElement("a");
+
+      link.href = "#";
+      link.textContent = `${item.hash.slice(0, 10)}…${item.hash.slice(-6)}`;
+      link.title = item.hash;
+
+      link.addEventListener("click", async (e) => {
+        e.preventDefault();
+
+        try {
+          await navigator.clipboard.writeText(item.hash);
+          toast("Transaction hash disalin.");
+        } catch {
+          toast(item.hash);
+        }
+      });
+
+      cell.appendChild(link);
+    }
+
+    setMessage(
+      "donorHistoryMessage",
+      `${rows.length} transaksi donasi ditemukan.`,
+      "success",
+    );
+  } catch (e) {
+    console.error(e);
+    setMessage(
+      "donorHistoryMessage",
+      e.shortMessage || e.reason || e.message || "Gagal memuat riwayat.",
+      "error",
+    );
+  }
+}
+
+async function loadAuditTrail() {
+  if (!donation || !provider || !account) return;
+
+  const button = $("loadAuditTrailBtn");
+  const body = $("auditTrailBody");
+
+  try {
+    const [isAuditor, isRegulator] = await Promise.all([
+      donation.auditors(account),
+      donation.regulators(account),
+    ]);
+
+    if (!isAuditor && !isRegulator) {
+      throw Error("Fitur audit hanya untuk Auditor atau Regulator.");
+    }
+
+    button.disabled = true;
+    setMessage(
+      "auditTrailMessage",
+      "Membaca event transaksi dari blockchain...",
+    );
+
+    const latestBlock = await provider.getBlockNumber();
+
+    const eventNames = [
+      "DonationReceived",
+      "RecipientSubmitted",
+      "RecipientVerified",
+      "DonationAllocated",
+      "DisbursementRequested",
+      "DisbursementApproved",
+      "DisbursementRejected",
+    ];
+
+    const results = await Promise.all(
+      eventNames.map(async (name) => {
+        const filter = donation.filters[name]();
+        return donation.queryFilter(filter, 0, latestBlock);
+      }),
+    );
+
+    const events = results
+      .flat()
+      .sort((a, b) => a.blockNumber - b.blockNumber || a.index - b.index);
+
+    body.replaceChildren();
+
+    if (events.length === 0) {
+      const row = body.insertRow();
+      const cell = row.insertCell();
+      cell.colSpan = 5;
+      cell.textContent = "Belum ada event transaksi di blockchain.";
+      setMessage("auditTrailMessage", "Tidak ada riwayat transaksi.");
+      return;
+    }
+
+    const shortHash = (value) =>
+      value && value.length > 18
+        ? `${value.slice(0, 10)}…${value.slice(-6)}`
+        : value || "—";
+
+    function describeEvent(event) {
+      const a = event.args;
+      const name = event.fragment.name;
+
+      switch (name) {
+        case "DonationReceived":
+          return {
+            activity: "Donasi masuk",
+            detail: `Donasi #${a.donationId} · ${fmt(
+              a.amount,
+            )} DRT · Donatur ${shortHash(a.donor)}`,
+            status: "Tercatat",
+          };
+
+        case "RecipientSubmitted":
+          return {
+            activity: "Pendaftaran penerima",
+            detail: `Hash penerima ${shortHash(
+              a.recipientHash,
+            )} · Wallet ${shortHash(a.wallet)}`,
+            status: "Diajukan",
+            allowedRoles: ["Volunteer"],
+          };
+
+        case "RecipientVerified":
+          return {
+            activity: "Verifikasi penerima",
+            detail: `Hash penerima ${shortHash(
+              a.recipientHash,
+            )} · Verifikator ${shortHash(a.verifier)}`,
+            status: `Diverifikasi (${a.verifierRole})`,
+            allowedRoles: ["Amil", "Auditor"],
+          };
+
+        case "DonationAllocated":
+          return {
+            activity: "Alokasi dana",
+            detail: `Alokasi #${a.allocationId} · Donasi #${
+              a.donationId
+            } · ${fmt(a.amount)} DRT · Penerima ${shortHash(a.recipientHash)}`,
+            status: "Dialokasikan",
+            allowedRoles: ["Amil"],
+          };
+
+        case "DisbursementRequested":
+          return {
+            activity: "Pengajuan penyaluran",
+            detail: `Pengajuan #${a.disbursementId} · Alokasi #${
+              a.allocationId
+            } · ${fmt(a.amount)} DRT`,
+            status: "Menunggu persetujuan",
+            allowedRoles: ["Amil"],
+          };
+
+        case "DisbursementApproved":
+          return {
+            activity: "Persetujuan penyaluran",
+            detail: `Pengajuan #${a.disbursementId} · ${fmt(
+              a.amount,
+            )} DRT · Penerima ${shortHash(a.recipientWallet)}`,
+            status: "Disetujui / ditransfer",
+            allowedRoles: ["Auditor"],
+          };
+
+        case "DisbursementRejected":
+          return {
+            activity: "Penolakan penyaluran",
+            detail: `Pengajuan #${a.disbursementId} · Auditor ${shortHash(
+              a.auditor,
+            )} · Hash alasan ${shortHash(a.reasonHash)}`,
+            status: "Ditolak",
+            allowedRoles: ["Auditor"],
+          };
+
+        default:
+          return {
+            activity: name,
+            detail: "—",
+            status: "Tercatat",
+          };
+      }
+    }
+
+    for (const event of events.slice().reverse()) {
+      const info = describeEvent(event);
+
+      if (
+        info.allowedRoles &&
+        !info.allowedRoles.some((role) => activeRoles.includes(role))
+      ) {
+        continue;
+      }
+
+      const row = body.insertRow();
+
+      const blockCell = row.insertCell();
+      blockCell.textContent = String(event.blockNumber);
+
+      const activityCell = row.insertCell();
+      activityCell.textContent = info.activity;
+
+      const detailCell = row.insertCell();
+      detailCell.textContent = info.detail;
+
+      const statusCell = row.insertCell();
+      statusCell.textContent = info.status;
+
+      const txCell = row.insertCell();
+      const link = document.createElement("a");
+      link.href = "#";
+      link.className = "hash";
+      link.textContent = shortHash(event.transactionHash);
+      link.title = event.transactionHash;
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        navigator.clipboard?.writeText(event.transactionHash).then(
+          () => toast("Transaction hash disalin."),
+          () => toast(event.transactionHash),
+        );
+      });
+      txCell.appendChild(link);
+    }
+
+    setMessage(
+      "auditTrailMessage",
+      `${events.length} event ditemukan hingga blok ${latestBlock}.`,
+      "success",
+    );
+  } catch (e) {
+    console.error(e);
+    setMessage(
+      "auditTrailMessage",
+      e.shortMessage || e.reason || e.message || "Gagal memuat audit trail.",
+      "error",
+    );
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function setMessage(id, text, type = "") {
+  const element = $(id);
+  if (!element) return;
+
+  element.textContent = text;
+  element.className = type ? `message ${type}` : "message";
 }
 
 async function updateRole(enabled) {
@@ -162,15 +568,24 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => $("toast").classList.remove("show"), 3800);
 }
+
 function message(msg, type = "") {
-  $("transactionMessage").textContent = msg;
-  $("transactionMessage").className = "message " + type;
+  const el = $("transactionMessage");
+
+  if (!el) return;
+
+  el.textContent = msg;
+  el.className = "message " + type;
 }
+
 function busy(on) {
   $("connectBtn").disabled = on;
-  $("approveBtn").disabled = on || !account;
-  $("donateBtn").disabled = on || !account;
   $("refreshBtn").disabled = on || !account;
+
+  const submitDonationBtn = $("submitDonationBtn");
+  if (submitDonationBtn) {
+    submitDonationBtn.disabled = on || !account;
+  }
 }
 function activity(label, amount, status, hash) {
   const body = $("activityBody");
@@ -495,10 +910,16 @@ async function submitDisbursement() {
     document.getElementById("disbursementMessage").textContent =
       "Transaksi dikirim. Menunggu konfirmasi blockchain...";
 
-    await tx.wait();
+    const receipt = await tx.wait();
+
+    if (receipt.status !== 1) {
+      throw new Error("Transaksi gagal di blockchain.");
+    }
 
     document.getElementById("disbursementMessage").textContent =
       "Pengajuan penyaluran berhasil dicatat.";
+
+    await loadAmilHistory();
 
     document.getElementById("disbursementAllocationId").value = "";
     document.getElementById("disbursementAmount").value = "";
@@ -691,7 +1112,302 @@ async function loadDisbursement() {
   }
 }
 
+async function loadAmilHistory() {
+  const list = document.getElementById("amilHistoryList");
+  const message = document.getElementById("amilHistoryMessage");
+
+  list.innerHTML = "";
+  message.textContent = "Memuat riwayat...";
+
+  try {
+    const nextId = Number(await donation.nextDisbursementId());
+
+    for (let id = 1; id < nextId; id++) {
+      const d = await donation.getDisbursement(id);
+
+      if (!d[4]) continue;
+
+      const statusMap = {
+        0: "PENDING",
+        1: "APPROVED",
+        2: "REJECTED",
+      };
+
+      const item = document.createElement("div");
+      item.style.padding = "16px";
+      item.style.border = "1px solid #e5e7eb";
+      item.style.borderRadius = "12px";
+      item.style.background = "#fff";
+      item.style.boxSizing = "border-box";
+
+      const title = document.createElement("strong");
+      title.textContent = `Pengajuan #${id} — ${
+        statusMap[Number(d[3])] ?? "UNKNOWN"
+      }`;
+
+      const details = document.createElement("p");
+      details.textContent = `ID alokasi: ${d[0]} | Jumlah: ${ethers.formatUnits(
+        d[1],
+        18,
+      )} DRT`;
+
+      item.append(title, details);
+      list.appendChild(item);
+    }
+
+    message.textContent = list.children.length
+      ? ""
+      : "Belum ada riwayat pengajuan.";
+  } catch (error) {
+    console.error(error);
+    message.textContent = "Gagal memuat riwayat pengajuan.";
+  }
+}
+
+async function verifyRecipient() {
+  const message = document.getElementById("verifyRecipientMessage");
+  const hash = document.getElementById("verifyRecipientHash").value.trim();
+  const button = document.getElementById("verifyRecipientBtn");
+
+  if (!donation || !account) {
+    message.textContent = "Hubungkan wallet Amil terlebih dahulu.";
+    return;
+  }
+
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+    message.textContent = "Hash penerima harus berupa bytes32.";
+    return;
+  }
+
+  try {
+    button.disabled = true;
+    message.textContent = "Memeriksa status penerima...";
+
+    const recipient = await donation.getRecipient(hash);
+
+    if (!recipient.exists) {
+      message.textContent = "Penerima tidak ditemukan.";
+      return;
+    }
+
+    if (recipient.amilVerified) {
+      message.textContent = "Penerima sudah diverifikasi Amil.";
+      return;
+    }
+
+    message.textContent = "Periksa dan konfirmasi transaksi melalui MetaMask.";
+
+    const tx = await donation.verifyRecipient(hash);
+    message.textContent = "Transaksi dikirim. Menunggu konfirmasi...";
+
+    await tx.wait();
+
+    message.textContent = "Penerima berhasil diverifikasi oleh Amil.";
+  } catch (error) {
+    console.error(error);
+    message.textContent =
+      error.reason || error.shortMessage || "Verifikasi gagal.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function createAllocation() {
+  const message = document.getElementById("createAllocationMessage");
+
+  try {
+    const donationId = document
+      .getElementById("allocationDonationId")
+      .value.trim();
+    const recipientHash = document
+      .getElementById("allocationRecipientHash")
+      .value.trim();
+    const amount = document.getElementById("allocationAmount").value.trim();
+
+    if (!donationId || !recipientHash || !amount || Number(amount) <= 0) {
+      message.textContent = "Lengkapi semua input dengan nilai yang valid.";
+      return;
+    }
+
+    if (!/^0x[0-9a-fA-F]{64}$/.test(recipientHash)) {
+      message.textContent =
+        "Hash penerima harus berupa bytes32 (0x diikuti 64 digit heksadesimal).";
+      return;
+    }
+
+    message.textContent = "Menunggu konfirmasi MetaMask...";
+
+    const amountWei = ethers.parseUnits(amount, 18);
+    const tx = await donation.allocateDonation(
+      BigInt(donationId),
+      recipientHash,
+      amountWei,
+    );
+
+    message.textContent = "Transaksi sedang diproses...";
+    await tx.wait();
+
+    message.textContent = "Alokasi berhasil dibuat.";
+    document.getElementById("allocationDonationId").value = "";
+    document.getElementById("allocationRecipientHash").value = "";
+    document.getElementById("allocationAmount").value = "";
+
+    await refresh();
+    await loadAllocations();
+  } catch (error) {
+    console.error(error);
+    message.textContent =
+      error.reason ||
+      error.shortMessage ||
+      "Alokasi gagal. Periksa role Amil, ID donasi, verifikasi penerima, dan saldo donasi.";
+  }
+}
+
+async function loadAllocations() {
+  const list = document.getElementById("allocationList");
+  const message = document.getElementById("allocationMessage");
+
+  list.innerHTML = "";
+  message.textContent = "Memuat alokasi...";
+
+  try {
+    const nextId = Number(await donation.nextAllocationId());
+
+    for (let id = 1; id < nextId; id++) {
+      let a;
+
+      try {
+        a = await donation.getAllocation(id);
+      } catch {
+        continue;
+      }
+
+      if (!a[5]) continue;
+
+      const card = document.createElement("div");
+      card.style.cssText =
+        "padding:16px;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:12px;";
+
+      const title = document.createElement("strong");
+      title.textContent = `Alokasi #${id}`;
+
+      const details = document.createElement("p");
+      details.textContent =
+        `ID Donasi: ${a[0]} | Total: ${ethers.formatUnits(a[2], 18)} DRT | ` +
+        `Sudah disalurkan: ${ethers.formatUnits(a[3], 18)} DRT | ` +
+        `Cadangan: ${ethers.formatUnits(a[4], 18)} DRT`;
+
+      card.append(title, details);
+      list.appendChild(card);
+    }
+
+    message.textContent = list.children.length ? "" : "Belum ada alokasi dana.";
+  } catch (error) {
+    console.error(error);
+    message.textContent = "Gagal memuat alokasi. Periksa ABI kontrak.";
+  }
+}
+
+async function submitRecipient() {
+  const message = document.getElementById("recipientMessage");
+
+  try {
+    const name = document.getElementById("recipientName").value.trim();
+    const wallet = document.getElementById("recipientWallet").value.trim();
+    const documentHash = document
+      .getElementById("recipientDocumentHash")
+      .value.trim();
+
+    if (!name || !wallet || !documentHash) {
+      message.textContent = "Lengkapi semua input.";
+      return;
+    }
+
+    if (!ethers.isAddress(wallet)) {
+      message.textContent = "Alamat wallet tidak valid.";
+      return;
+    }
+
+    if (!/^0x[0-9a-fA-F]{64}$/.test(documentHash)) {
+      message.textContent = "Hash dokumen harus berupa bytes32.";
+      return;
+    }
+
+    const recipientHash = ethers.keccak256(ethers.toUtf8Bytes(name));
+
+    message.textContent = `Hash penerima: ${recipientHash}. Menunggu konfirmasi...`;
+
+    const tx = await donation.submitRecipient(
+      recipientHash,
+      wallet,
+      documentHash,
+    );
+
+    await tx.wait();
+
+    message.textContent = `Penerima berhasil didaftarkan. Hash: ${recipientHash}`;
+  } catch (error) {
+    console.error(error);
+    message.textContent =
+      error.reason || error.shortMessage || "Pendaftaran penerima gagal.";
+  }
+}
+
+async function approveRecipient() {
+  const message = document.getElementById("approveRecipientMessage");
+  const hash = document.getElementById("approveRecipientHash").value.trim();
+  const button = document.getElementById("approveRecipientBtn");
+
+  if (!donation || !account) {
+    message.textContent = "Hubungkan wallet Auditor terlebih dahulu.";
+    return;
+  }
+
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+    message.textContent = "Hash penerima harus berupa bytes32.";
+    return;
+  }
+
+  try {
+    button.disabled = true;
+    message.textContent = "Memeriksa status penerima...";
+
+    const recipient = await donation.getRecipient(hash);
+
+    if (!recipient.exists) {
+      message.textContent = "Penerima tidak ditemukan.";
+      return;
+    }
+
+    if (!recipient.amilVerified) {
+      message.textContent = "Penerima harus diverifikasi Amil terlebih dahulu.";
+      return;
+    }
+
+    if (recipient.auditorVerified) {
+      message.textContent = "Penerima sudah disetujui Auditor.";
+      return;
+    }
+
+    message.textContent = "Periksa dan konfirmasi transaksi melalui MetaMask.";
+
+    const tx = await donation.approveRecipient(hash);
+    message.textContent = "Transaksi dikirim. Menunggu konfirmasi...";
+
+    await tx.wait();
+
+    message.textContent = "Penerima berhasil disetujui oleh Auditor.";
+  } catch (error) {
+    console.error(error);
+    message.textContent =
+      error.reason || error.shortMessage || "Persetujuan gagal.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function init() {
+  updateRolePanels("");
   $("today").textContent =
     "◷  " +
     new Date().toLocaleDateString("id-ID", {
@@ -706,8 +1422,6 @@ function init() {
     ? short(CONFIG.donationAddress)
     : "Belum diatur";
   $("connectBtn").addEventListener("click", connect);
-  $("approveBtn").addEventListener("click", approve);
-  $("donateBtn").addEventListener("click", donate);
   $("refreshBtn").addEventListener("click", refresh);
   if (!ready())
     message(
@@ -725,6 +1439,11 @@ function init() {
     updateRole(false);
   });
 
+  $("loadAuditTrailBtn").addEventListener("click", loadAuditTrail);
+
+  $("submitDonationBtn").addEventListener("click", submitDonation);
+  $("loadDonorHistoryBtn").addEventListener("click", loadDonorHistory);
+
   document
     .getElementById("submitDisbursementBtn")
     .addEventListener("click", submitDisbursement);
@@ -740,5 +1459,29 @@ function init() {
   document
     .getElementById("rejectDisbursementBtn")
     .addEventListener("click", () => processDisbursement(false));
+
+  document
+    .getElementById("loadAmilHistoryBtn")
+    .addEventListener("click", loadAmilHistory);
+
+  document
+    .getElementById("loadAllocationsBtn")
+    .addEventListener("click", loadAllocations);
+
+  document
+    .getElementById("createAllocationBtn")
+    .addEventListener("click", createAllocation);
+
+  document
+    .getElementById("submitRecipientBtn")
+    .addEventListener("click", submitRecipient);
+
+  document
+    .getElementById("verifyRecipientBtn")
+    .addEventListener("click", verifyRecipient);
+
+  document
+    .getElementById("approveRecipientBtn")
+    .addEventListener("click", approveRecipient);
 }
 document.addEventListener("DOMContentLoaded", init);

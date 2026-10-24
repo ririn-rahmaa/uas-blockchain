@@ -70,11 +70,40 @@
       </section>
 
       <section
-        class="panel"
-        id="roleManagement"
-        data-role-access="Admin"
-        style="display: none; margin-bottom: 24px"
+        class="stats"
+        data-role-access="Admin,Amil,Volunteer,Auditor,Regulator"
       >
+        <article>
+          <div class="statlabel">
+            Total donasi tercatat <span class="ico purplebg">↗</span>
+          </div>
+          <strong id="statDonation">— <small>DRT</small></strong
+          ><small id="donationStatFoot">Menunggu koneksi kontrak</small>
+        </article>
+        <article>
+          <div class="statlabel">
+            Sudah dialokasikan <span class="ico bluebg">⌁</span>
+          </div>
+          <strong id="statAllocated">— <small>DRT</small></strong
+          ><small>Terdata pada kontrak</small>
+        </article>
+        <article>
+          <div class="statlabel">
+            Sudah disalurkan <span class="ico greenbg">✓</span>
+          </div>
+          <strong id="statDisbursed">— <small>DRT</small></strong
+          ><small>Disetujui auditor</small>
+        </article>
+        <article>
+          <div class="statlabel">
+            Saldo wallet <span class="ico amberbg">◉</span>
+          </div>
+          <strong id="statBalance">— <small>DRT</small></strong
+          ><small id="ethBalance">ETH untuk gas: —</small>
+        </article>
+      </section>
+
+      <section class="panel" id="roleManagement" data-role-panel="Admin">
         <div class="panelhead">
           <div>
             <label>ADMINISTRATION</label>
@@ -118,39 +147,8 @@
         </div>
       </section>
 
-      <!-- WORKSPACE AMIL -->
-      <section
-        class="panel role-workspace"
-        data-role-panel="Amil"
-        style="display: none; margin-bottom: 24px"
-      >
-        <div class="panelhead">
-          <div>
-            <label>AMIL WORKSPACE</label>
-            <h2>Pengelolaan Bantuan</h2>
-            <p>
-              Kelola verifikasi penerima, alokasi donasi, dan pengajuan
-              penyaluran.
-            </p>
-          </div>
-          <span class="badge">Amil</span>
-        </div>
-        <div class="details">
-          <div><span>Verifikasi penerima</span><b>Pengelolaan data</b></div>
-          <div><span>Alokasi donasi</span><b>Pengaturan alokasi</b></div>
-          <div><span>Penyaluran bantuan</span><b>Pengajuan penyaluran</b></div>
-        </div>
-        <p class="hint">
-          Fitur transaksi akan dihubungkan pada tahap berikutnya.
-        </p>
-      </section>
-
       <!-- WORKSPACE VOLUNTEER -->
-      <section
-        class="panel role-workspace"
-        data-role-panel="Volunteer"
-        style="display: none; margin-bottom: 24px"
-      >
+      <section class="panel role-workspace" data-role-panel="Volunteer">
         <div class="panelhead">
           <div>
             <label>VOLUNTEER WORKSPACE</label>
@@ -171,33 +169,41 @@
         </p>
       </section>
 
-      <!-- WORKSPACE AUDITOR -->
-      <section
-        class="panel role-workspace"
-        data-role-panel="Auditor"
-        style="display: none; margin-bottom: 24px"
-      >
-        <div class="panelhead">
-          <div>
-            <label>AUDITOR WORKSPACE</label>
-            <h2>Pemeriksaan dan Persetujuan</h2>
-            <p>Tinjau pengajuan penerima dan penyaluran bantuan.</p>
+      <section class="role-panel" data-role-panel="Volunteer">
+        <div class="feature-section">
+          <h3>Daftarkan Penerima</h3>
+
+          <div class="form-group">
+            <label for="recipientName"
+              >Nama Penerima (referensi internal)</label
+            >
+            <input
+              id="recipientName"
+              type="text"
+              placeholder="Masukkan nama penerima"
+            />
           </div>
-          <span class="badge">Auditor</span>
+
+          <div class="form-group">
+            <label for="recipientWallet">Wallet Penerima</label>
+            <input id="recipientWallet" type="text" placeholder="0x..." />
+          </div>
+
+          <div class="form-group">
+            <label for="recipientDocumentHash">Hash Dokumen</label>
+            <input id="recipientDocumentHash" type="text" placeholder="0x..." />
+          </div>
+
+          <button id="submitRecipientBtn" type="button">
+            Daftarkan Penerima
+          </button>
+
+          <p id="recipientMessage"></p>
         </div>
-        <div class="details">
-          <div><span>Verifikasi penerima</span><b>Review pengajuan</b></div>
-          <div><span>Penyaluran bantuan</span><b>Approve / Reject</b></div>
-        </div>
-        <p class="hint">Aksi persetujuan akan dihubungkan ke smart contract.</p>
       </section>
 
       <!-- WORKSPACE REGULATOR -->
-      <section
-        class="panel role-workspace"
-        data-role-panel="Regulator"
-        style="display: none; margin-bottom: 24px"
-      >
+      <section class="panel role-workspace" data-role-panel="Regulator">
         <div class="panelhead">
           <div>
             <label>REGULATOR WORKSPACE</label>
@@ -216,182 +222,68 @@
       </section>
 
       <section
-        class="stats"
-        data-role-access="Admin,Amil,Volunteer,Auditor,Regulator"
-      >
-        <article>
-          <div class="statlabel">
-            Total donasi tercatat <span class="ico purplebg">↗</span>
-          </div>
-          <strong id="statDonation">— <small>DRT</small></strong
-          ><small id="donationStatFoot">Menunggu koneksi kontrak</small>
-        </article>
-        <article>
-          <div class="statlabel">
-            Sudah dialokasikan <span class="ico bluebg">⌁</span>
-          </div>
-          <strong id="statAllocated">— <small>DRT</small></strong
-          ><small>Terdata pada kontrak</small>
-        </article>
-        <article>
-          <div class="statlabel">
-            Sudah disalurkan <span class="ico greenbg">✓</span>
-          </div>
-          <strong id="statDisbursed">— <small>DRT</small></strong
-          ><small>Disetujui auditor</small>
-        </article>
-        <article>
-          <div class="statlabel">
-            Saldo wallet <span class="ico amberbg">◉</span>
-          </div>
-          <strong id="statBalance">— <small>DRT</small></strong
-          ><small id="ethBalance">ETH untuk gas: —</small>
-        </article>
-      </section>
-      <section
-        class="columns"
-        data-role-access="Admin,Amil,Volunteer,Auditor,Regulator"
-      >
-        <article class="panel" id="donation">
-          <div class="panelhead">
-            <div>
-              <label>INTERAKSI KONTRAK</label>
-              <h2>Demo transaksi</h2>
-              <p>Transaksi ditandatangani melalui wallet yang terhubung.</p>
-            </div>
-            <span class="badge">● On-chain</span>
-          </div>
-          <div class="formbox">
-            <label for="donationAmount">Jumlah donasi <span>(DRT)</span></label>
-            <div class="amount">
-              <input
-                id="donationAmount"
-                type="number"
-                min="0.01"
-                step="0.01"
-                value="1"
-              /><b>DRT</b>
-            </div>
-            <p class="hint">
-              Token harus tersedia di wallet dan allowance perlu disetujui
-              sebelum donasi.
-            </p>
-            <div class="buttons">
-              <button id="approveBtn" class="secondary" disabled>
-                1. Approve token</button
-              ><button id="donateBtn" class="primary" disabled>
-                2. Donasi sekarang ↗
-              </button>
-            </div>
-            <p id="transactionMessage" class="message" role="status">
-              Hubungkan wallet untuk mengaktifkan transaksi.
-            </p>
-          </div>
-          <p class="footnote">
-            ⓘ &nbsp; ETH lokal digunakan untuk gas, sedangkan DRT adalah token
-            donasi.
-          </p>
-        </article>
-        <article class="panel">
-          <div class="panelhead">
-            <div>
-              <label>STATUS KONTRAK</label>
-              <h2>Informasi jaringan</h2>
-              <p>Detail koneksi dan deployment aktif.</p>
-            </div>
-            <span class="chain">⛓</span>
-          </div>
-          <div class="details">
-            <div><span>Network</span><b>Hardhat Local</b></div>
-            <div><span>Chain ID</span><code>31337</code></div>
-            <div><span>RPC endpoint</span><code>127.0.0.1:8545</code></div>
-            <div>
-              <span>MockToken</span><code id="tokenAddress">Belum diatur</code>
-            </div>
-            <div>
-              <span>DisasterDonation</span
-              ><code id="donationAddress">Belum diatur</code>
-            </div>
-          </div>
-          <button id="refreshBtn" class="outline full" disabled>
-            ↻ &nbsp; Muat ulang data kontrak
-          </button>
-          <p class="tiny">
-            Alamat kontrak diatur pada konfigurasi <code>app.js</code>.
-          </p>
-        </article>
-      </section>
-
-      <!-- PANEL AMIL: PENGAJUAN PENYALURAN -->
-      <section
         class="panel"
-        id="amilDisbursementPanel"
-        data-role-panel="Amil"
-        style="display: none; margin-bottom: 24px"
+        id="auditTrailPanel"
+        data-role-panel="Auditor,Regulator"
       >
         <div class="panelhead">
           <div>
-            <label>AMIL WORKSPACE</label>
-            <h2>Pengajuan Penyaluran</h2>
-            <p>Ajukan penyaluran dana dari alokasi yang sudah tersedia.</p>
+            <label>BLOCKCHAIN AUDIT</label>
+            <h2>Audit Trail</h2>
+            <p>
+              Riwayat donasi, verifikasi, alokasi, dan penyaluran yang tercatat
+              di blockchain.
+            </p>
           </div>
-          <span class="badge">Amil only</span>
+          <span class="badge">Auditor / Regulator</span>
         </div>
 
         <div class="formbox">
-          <label for="disbursementAllocationId">ID alokasi</label>
-          <input
-            id="disbursementAllocationId"
-            type="number"
-            min="1"
-            step="1"
-            placeholder="Contoh: 1"
-          />
-
-          <label
-            for="disbursementAmount"
-            style="display: block; margin-top: 16px"
-          >
-            Jumlah penyaluran (DRT)
-          </label>
-          <div class="amount">
-            <input
-              id="disbursementAmount"
-              type="number"
-              min="0"
-              step="any"
-              placeholder="Contoh: 10"
-            />
-            <b>DRT</b>
-          </div>
-
-          <label
-            for="disbursementDocumentHash"
-            style="display: block; margin-top: 16px"
-          >
-            Hash dokumen pendukung (bytes32)
-          </label>
-          <input
-            id="disbursementDocumentHash"
-            type="text"
-            placeholder="0x + 64 karakter heksadesimal"
-            autocomplete="off"
-          />
-
-          <p class="hint">
-            Masukkan hash dokumen pendukung, bukan data pribadi penerima.
-          </p>
-
           <div class="buttons">
-            <button id="submitDisbursementBtn" class="primary" disabled>
-              Kirim Pengajuan
+            <button id="loadAuditTrailBtn" class="primary" disabled>
+              Muat Riwayat Blockchain
             </button>
           </div>
-
-          <p id="disbursementMessage" class="message" role="status">
-            Hubungkan wallet Amil untuk mengajukan penyaluran.
+          <p id="auditTrailMessage" class="message" role="status">
+            Hubungkan wallet Auditor atau Regulator untuk melihat riwayat.
           </p>
+
+          <div class="tablewrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>BLOK</th>
+                  <th>AKTIVITAS</th>
+                  <th>DETAIL / NOMINAL</th>
+                  <th>STATUS</th>
+                  <th>TRANSACTION HASH</th>
+                </tr>
+              </thead>
+              <tbody id="auditTrailBody">
+                <tr class="empty">
+                  <td colspan="5">Klik “Muat Riwayat Blockchain”.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
+      </section>
+
+      <!-- WORKSPACE AUDITOR -->
+      <section class="panel role-workspace" data-role-panel="Auditor">
+        <div class="panelhead">
+          <div>
+            <label>AUDITOR WORKSPACE</label>
+            <h2>Pemeriksaan dan Persetujuan</h2>
+            <p>Tinjau pengajuan penerima dan penyaluran bantuan.</p>
+          </div>
+          <span class="badge">Auditor</span>
+        </div>
+        <div class="details">
+          <div><span>Verifikasi penerima</span><b>Review pengajuan</b></div>
+          <div><span>Penyaluran bantuan</span><b>Approve / Reject</b></div>
+        </div>
+        <p class="hint">Aksi persetujuan akan dihubungkan ke smart contract.</p>
       </section>
 
       <!-- PANEL AUDITOR: PEMERIKSAAN PENGAJUAN -->
@@ -399,7 +291,6 @@
         class="panel"
         id="auditorDisbursementPanel"
         data-role-panel="Auditor"
-        style="display: none; margin-bottom: 24px"
       >
         <div class="panelhead">
           <div>
@@ -465,40 +356,264 @@
         </div>
       </section>
 
-      <section
-        class="panel activity"
-        data-role-access="Admin,Auditor,Regulator"
-        id="activity"
-      >
+      <!-- WORKSPACE AMIL -->
+      <section class="panel role-workspace" data-role-panel="Amil">
         <div class="panelhead">
           <div>
-            <label>AUDIT TRAIL</label>
-            <h2>Aktivitas terbaru</h2>
-            <p>Transaksi yang dilakukan dari dashboard ini.</p>
+            <label>AMIL WORKSPACE</label>
+            <h2>Pengelolaan Bantuan</h2>
+            <p>
+              Kelola verifikasi penerima, alokasi donasi, dan pengajuan
+              penyaluran.
+            </p>
           </div>
-          <span class="count" id="activityCount">0 aktivitas</span>
+          <span class="badge">Amil</span>
         </div>
+        <div class="details">
+          <div><span>Verifikasi penerima</span><b>Pengelolaan data</b></div>
+          <div><span>Alokasi donasi</span><b>Pengaturan alokasi</b></div>
+          <div><span>Penyaluran bantuan</span><b>Pengajuan penyaluran</b></div>
+        </div>
+        <p class="hint">
+          Fitur transaksi akan dihubungkan pada tahap berikutnya.
+        </p>
+      </section>
+
+      <!-- PANEL AMIL: PENGAJUAN PENYALURAN -->
+      <section class="panel" id="amilDisbursementPanel" data-role-panel="Amil">
+        <div class="panelhead">
+          <div>
+            <label>AMIL WORKSPACE</label>
+            <h2>Pengajuan Penyaluran</h2>
+            <p>Ajukan penyaluran dana dari alokasi yang sudah tersedia.</p>
+          </div>
+          <span class="badge">Amil only</span>
+        </div>
+
+        <div class="formbox">
+          <label for="disbursementAllocationId">ID alokasi</label>
+          <input
+            id="disbursementAllocationId"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="Contoh: 1"
+          />
+
+          <label
+            for="disbursementAmount"
+            style="display: block; margin-top: 16px"
+          >
+            Jumlah penyaluran (DRT)
+          </label>
+          <div class="amount">
+            <input
+              id="disbursementAmount"
+              type="number"
+              min="0"
+              step="any"
+              placeholder="Contoh: 10"
+            />
+            <b>DRT</b>
+          </div>
+
+          <label
+            for="disbursementDocumentHash"
+            style="display: block; margin-top: 16px"
+          >
+            Hash dokumen pendukung (bytes32)
+          </label>
+          <input
+            id="disbursementDocumentHash"
+            type="text"
+            placeholder="0x + 64 karakter heksadesimal"
+            autocomplete="off"
+          />
+
+          <p class="hint">
+            Masukkan hash dokumen pendukung, bukan data pribadi penerima.
+          </p>
+
+          <div class="buttons">
+            <button id="submitDisbursementBtn" class="primary" disabled>
+              Kirim Pengajuan
+            </button>
+          </div>
+
+          <p id="disbursementMessage" class="message" role="status">
+            Hubungkan wallet Amil untuk mengajukan penyaluran.
+          </p>
+        </div>
+
+        <hr />
+
+        <h3>Riwayat Pengajuan Penyaluran</h3>
+
+        <button id="loadAmilHistoryBtn" type="button">Muat Riwayat</button>
+
+        <p id="amilHistoryMessage"></p>
+
+        <div id="amilHistoryList"></div>
+      </section>
+
+      <section class="feature-section" data-role-panel="Amil">
+        <h3>Alokasi Dana Donasi</h3>
+
+        <div class="form-group">
+          <label for="allocationDonationId">ID Donasi</label>
+          <input
+            id="allocationDonationId"
+            type="number"
+            min="1"
+            placeholder="Masukkan ID donasi"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="allocationRecipientHash">Hash Penerima</label>
+          <input id="allocationRecipientHash" type="text" placeholder="0x..." />
+        </div>
+
+        <div class="form-group">
+          <label for="allocationAmount">Jumlah Alokasi (DRT)</label>
+          <input
+            id="allocationAmount"
+            type="number"
+            min="0"
+            step="any"
+            placeholder="Masukkan jumlah"
+          />
+        </div>
+
+        <button id="createAllocationBtn" type="button">Buat Alokasi</button>
+
+        <p id="createAllocationMessage"></p>
+      </section>
+
+      <section class="feature-section" data-role-panel="Amil">
+        <h3>Daftar Alokasi Dana</h3>
+
+        <button id="loadAllocationsBtn" type="button">Muat Alokasi</button>
+
+        <p id="allocationMessage"></p>
+        <div id="allocationList"></div>
+      </section>
+
+      <section class="feature-section" data-role-panel="Amil, Auditor">
+        <h3>Verifikasi Penerima</h3>
+
+        <div class="form-group">
+          <label for="verifyRecipientHash">Hash Penerima</label>
+          <input id="verifyRecipientHash" type="text" placeholder="0x..." />
+        </div>
+
+        <button id="verifyRecipientBtn" type="button">
+          Verifikasi Penerima
+        </button>
+
+        <p id="verifyRecipientMessage" role="status"></p>
+      </section>
+
+      <section class="feature-section" data-role-panel="Auditor">
+        <h3>Persetujuan Penerima</h3>
+
+        <div class="form-group">
+          <label for="approveRecipientHash">Hash Penerima</label>
+          <input id="approveRecipientHash" type="text" placeholder="0x..." />
+        </div>
+
+        <button id="approveRecipientBtn" type="button">Setujui Penerima</button>
+
+        <p id="approveRecipientMessage" role="status"></p>
+      </section>
+
+      <!-- PANEL DONATUR: DONASI -->
+      <section
+        class="feature-section"
+        id="donorPanel"
+        data-requires-wallet="true"
+        hidden
+      >
+        <h2>Panel Donatur</h2>
+        <p>Berikan donasi dan pantau status transaksi melalui blockchain.</p>
+
+        <div class="form-group">
+          <label for="donorAmount">Nominal Donasi (DRT)</label>
+          <input
+            id="donorAmount"
+            type="number"
+            min="0.000000000000000001"
+            step="any"
+            placeholder="Contoh: 10"
+          />
+        </div>
+
+        <button id="submitDonationBtn" type="button">Berikan Donasi</button>
+
+        <p id="donorMessage" role="status"></p>
+
+        <hr />
+
+        <div class="row">
+          <h3>Riwayat Donasi Saya</h3>
+          <button id="loadDonorHistoryBtn" type="button">Muat Riwayat</button>
+        </div>
+
+        <p id="donorHistoryMessage" role="status"></p>
+
         <div class="tablewrap">
           <table>
             <thead>
               <tr>
-                <th>AKTIVITAS</th>
-                <th>JUMLAH</th>
-                <th>STATUS</th>
-                <th>TRANSACTION HASH</th>
+                <th>ID Donasi</th>
+                <th>Nominal</th>
+                <th>Status</th>
+                <th>Transaction Hash</th>
               </tr>
             </thead>
-            <tbody id="activityBody">
-              <tr class="empty">
-                <td colspan="4">
-                  <b>⌁<br />Belum ada aktivitas</b>
-                  <p>Transaksi dari dashboard akan muncul di sini.</p>
-                </td>
+            <tbody id="donorHistoryBody">
+              <tr>
+                <td colspan="4">Klik Muat Riwayat untuk melihat donasi.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
+
+      <section
+        class="columns"
+        data-role-access="Admin,Amil,Volunteer,Auditor,Regulator"
+      >
+        <article class="panel">
+          <div class="panelhead">
+            <div>
+              <label>STATUS KONTRAK</label>
+              <h2>Informasi jaringan</h2>
+              <p>Detail koneksi dan deployment aktif.</p>
+            </div>
+            <span class="chain">⛓</span>
+          </div>
+          <div class="details">
+            <div><span>Network</span><b>Hardhat Local</b></div>
+            <div><span>Chain ID</span><code>31337</code></div>
+            <div><span>RPC endpoint</span><code>127.0.0.1:8545</code></div>
+            <div>
+              <span>MockToken</span><code id="tokenAddress">Belum diatur</code>
+            </div>
+            <div>
+              <span>DisasterDonation</span
+              ><code id="donationAddress">Belum diatur</code>
+            </div>
+          </div>
+          <button id="refreshBtn" class="outline full" disabled>
+            ↻ &nbsp; Muat ulang data kontrak
+          </button>
+          <p class="tiny">
+            Alamat kontrak diatur pada konfigurasi <code>app.js</code>.
+          </p>
+        </article>
+      </section>
+
       <footer>
         © 2026 DonasiChain · Prototype UAS Blockchain
         <span>Built for traceability ◆</span>

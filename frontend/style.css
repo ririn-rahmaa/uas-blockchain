@@ -84,6 +84,11 @@ label {
   color: #a0a7b6;
   font-size: 10px;
 }
+
+.role-panel[hidden] {
+  display: none !important;
+}
+
 .network {
   display: flex;
   align-items: center;
@@ -334,6 +339,7 @@ header {
 }
 .panel {
   padding: 21px;
+  margin-bottom: 20px;
   min-width: 0;
 }
 .panelhead {
@@ -645,6 +651,7 @@ footer span {
   }
   .panel {
     padding: 16px 13px;
+    margin-bottom: 20px;
   }
   .buttons {
     grid-template-columns: 1fr;
@@ -815,4 +822,173 @@ footer span {
 #amilDisbursementPanel .formbox .hint,
 #auditorDisbursementPanel .formbox .hint {
   line-height: 1.6;
+}
+
+/* Riwayat Pengajuan Amil */
+#amilHistoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+#amilHistoryList > div {
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+#amilHistoryList strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #1e293b;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 0;
+}
+
+#amilHistoryList p {
+  margin: 0;
+  padding: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+#loadAmilHistoryBtn {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #635bff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+#loadAmilHistoryBtn:hover {
+  background: #5145e5;
+}
+
+#amilHistoryMessage {
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+#amilHistoryList > div {
+  padding: 16px !important;
+  box-sizing: border-box;
+}
+
+/* Container fitur alokasi */
+.feature-section {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+/* Judul fitur */
+.feature-section h3 {
+  margin: 0 0 18px;
+  color: #1e293b;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Form */
+.feature-section .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.feature-section .form-group label {
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.feature-section input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #dbe3f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #1e293b;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.feature-section input:focus {
+  outline: none;
+  border-color: #635bff;
+  box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.12);
+}
+
+/* Tombol */
+.feature-section button {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  background: #635bff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.feature-section button:hover {
+  background: #5145e5;
+}
+
+/* Pesan status */
+.feature-section > p {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Kartu alokasi yang dibuat oleh JavaScript */
+#allocationList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+#allocationList > div {
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+#allocationList strong {
+  display: block;
+  margin-bottom: 12px;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+#allocationList p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.feature-section {
+  margin-bottom: 20px;
 }
