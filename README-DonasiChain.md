@@ -165,7 +165,17 @@ Admin adalah alamat yang ditentukan oleh smart contract. Gunakan akun Admin untu
 
 Akun Donatur tidak memerlukan role khusus. Gunakan akun yang belum diberi role untuk menguji fitur donasi.
 
-## 9. Skenario Pengujian yang bisa dilakukan
+## 9. Transfer token
+
+Buka terminal ketiga di folder utama proyek.
+
+Jalankan script transfer token dari admin ke donatur, agar donatur bisa melakukan donasi:
+
+```bash
+npx hardhat run scripts/transfer-token.js --network localhost
+```
+
+## 10. Skenario Pengujian yang bisa dilakukan
 
 ### A. Donatur
 
