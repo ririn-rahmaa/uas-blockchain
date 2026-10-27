@@ -406,4 +406,64 @@ describe("DisasterDonation", function () {
     // Pastikan role Amil berhasil diberikan
     expect(await f.donation.amils(f.auditor.address)).to.equal(true);
   });
+  it("blocks reentrancy during disbursement approval", async function () {
+    const { ethers } = await network.create();
+
+    const token = await ethers.deployContract("ReentrantToken");
+    await token.waitForDeployment();
+
+    const donation = await ethers.deployContract("DisasterDonation", [
+      await token.getAddress(),
+    ]);
+    await donation.waitForDeployment();
+
+    const [admin, donor, volunteer, amil, auditor, recipient] =
+      await ethers.getSigners();
+
+    const attacker = await ethers.deployContract("AttackingAuditor", [
+      await donation.getAddress(),
+      await token.getAddress(),
+    ]);
+    await attacker.waitForDeployment();
+
+    await donation.connect(admin).setVolunteer(volunteer.address, true);
+    await donation.connect(admin).setAmil(amil.address, true);
+    await donation.connect(admin).setAuditor(await attacker.getAddress(), true);
+    await donation.connect(admin).setAuditor(auditor.address, true);
+
+    const amount = ethers.parseUnits("100", 18);
+    await token.mint(donor.address, amount);
+    await token.connect(donor).approve(await donation.getAddress(), amount);
+    await donation.connect(donor).donate(amount);
+
+    const recipientHash = ethers.keccak256(ethers.toUtf8Bytes("recipient"));
+    const documentHash = ethers.keccak256(ethers.toUtf8Bytes("document"));
+
+    await donation
+      .connect(volunteer)
+      .submitRecipient(recipientHash, recipient.address, documentHash);
+
+    await donation.connect(amil).verifyRecipient(recipientHash);
+
+    await donation.connect(auditor).approveRecipient(recipientHash);
+
+    await donation.connect(amil).allocateDonation(1, recipientHash, amount);
+
+    await donation.connect(amil).requestDisbursement(1, amount, documentHash);
+
+    await token.configureAttack(
+      await donation.getAddress(),
+      await attacker.getAddress(),
+    );
+
+    await attacker.attack(1);
+
+    if (!(await attacker.reentryAttempted())) {
+      throw new Error("Reentry was not attempted");
+    }
+
+    if (!(await attacker.reentryBlocked())) {
+      throw new Error("Reentry was not blocked");
+    }
+  });
 });
