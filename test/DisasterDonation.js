@@ -334,4 +334,24 @@ describe("DisasterDonation", function () {
         .submitRecipient(recipientHash, f.recipient.address, documentHash),
     ).to.be.revertedWith("Only volunteer");
   });
+
+  it("mengizinkan Regulator membaca saldo token kontrak", async function () {
+    const f = await deployFixture();
+
+    await f.donation.connect(f.admin).setRegulator(f.recipient.address, true);
+
+    const balance = await f.donation
+      .connect(f.recipient)
+      .getContractTokenBalance();
+
+    expect(balance).to.equal(0n);
+  });
+
+  it("menolak pembacaan saldo token kontrak oleh akun tanpa role Auditor atau Regulator", async function () {
+    const f = await deployFixture();
+
+    await expect(
+      f.donation.connect(f.donor).getContractTokenBalance(),
+    ).to.be.revertedWith("Only auditor or regulator");
+  });
 });
