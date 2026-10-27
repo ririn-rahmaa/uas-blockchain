@@ -316,4 +316,22 @@ describe("DisasterDonation", function () {
       f.donation.connect(f.admin).setAmil(f.auditor.address, true),
     ).to.be.revertedWith("Role conflict");
   });
+
+  it("menolak pendaftaran penerima oleh akun tanpa role volunteer", async function () {
+    const f = await deployFixture();
+
+    const recipientHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("recipient-unauthorized"),
+    );
+
+    const documentHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("document-unauthorized"),
+    );
+
+    await expect(
+      f.donation
+        .connect(f.donor)
+        .submitRecipient(recipientHash, f.recipient.address, documentHash),
+    ).to.be.revertedWith("Only volunteer");
+  });
 });
