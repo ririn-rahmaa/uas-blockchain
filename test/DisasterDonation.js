@@ -300,4 +300,20 @@ describe("DisasterDonation", function () {
       requestedAmount,
     );
   });
+
+  it("menolak pemberian role Auditor kepada akun yang sudah menjadi Amil", async function () {
+    const f = await deployFixture();
+
+    await expect(
+      f.donation.connect(f.admin).setAuditor(f.amil.address, true),
+    ).to.be.revertedWith("Role conflict");
+  });
+
+  it("menolak pemberian role Amil kepada akun yang sudah menjadi Auditor", async function () {
+    const f = await deployFixture();
+
+    await expect(
+      f.donation.connect(f.admin).setAmil(f.auditor.address, true),
+    ).to.be.revertedWith("Role conflict");
+  });
 });
