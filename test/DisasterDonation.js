@@ -374,4 +374,36 @@ describe("DisasterDonation", function () {
         .setAuditor("0x0000000000000000000000000000000000000000", true),
     ).to.be.revertedWith("Invalid address");
   });
+
+  it("mengizinkan akun menjadi Auditor setelah role Amil dicabut", async function () {
+    const f = await deployFixture();
+
+    // Cabut role Amil
+    await f.donation.connect(f.admin).setAmil(f.amil.address, false);
+
+    // Pastikan role Amil sudah dicabut
+    expect(await f.donation.amils(f.amil.address)).to.equal(false);
+
+    // Berikan role Auditor kepada akun yang sama
+    await f.donation.connect(f.admin).setAuditor(f.amil.address, true);
+
+    // Pastikan role Auditor berhasil diberikan
+    expect(await f.donation.auditors(f.amil.address)).to.equal(true);
+  });
+
+  it("mengizinkan akun menjadi Amil setelah role Auditor dicabut", async function () {
+    const f = await deployFixture();
+
+    // Cabut role Auditor
+    await f.donation.connect(f.admin).setAuditor(f.auditor.address, false);
+
+    // Pastikan role Auditor sudah dicabut
+    expect(await f.donation.auditors(f.auditor.address)).to.equal(false);
+
+    // Berikan role Amil kepada akun yang sama
+    await f.donation.connect(f.admin).setAmil(f.auditor.address, true);
+
+    // Pastikan role Amil berhasil diberikan
+    expect(await f.donation.amils(f.auditor.address)).to.equal(true);
+  });
 });
