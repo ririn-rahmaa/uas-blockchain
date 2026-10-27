@@ -1,6 +1,7 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { network } from "hardhat";
+import { ethers } from "ethers";
 
 describe("DisasterDonation", function () {
   async function deployFixture() {
@@ -465,5 +466,29 @@ describe("DisasterDonation", function () {
     if (!(await attacker.reentryBlocked())) {
       throw new Error("Reentry was not blocked");
     }
+  });
+  it("menolak permintaan pencairan yang totalnya melebihi sisa alokasi", async function () {
+    const f = await prepareAllocation();
+
+    const firstAmount = f.ethers.parseUnits("60", 18);
+    const secondAmount = f.ethers.parseUnits("50", 18);
+
+    // Permintaan pertama mencadangkan 60 token.
+    await f.donation
+      .connect(f.amil)
+      .requestDisbursement(1, firstAmount, f.documentHash);
+
+    // Permintaan kedua membuat total cadangan menjadi 110 token,
+    // padahal alokasi hanya sebesar 100 token.
+    await expect(
+      f.donation
+        .connect(f.amil)
+        .requestDisbursement(1, secondAmount, f.documentHash),
+    ).to.be.revert(ethers);
+
+    const allocation = await f.donation.getAllocation(1);
+
+    // Cadangan seharusnya tetap 60 token.
+    expect(allocation.reservedAmount).to.equal(firstAmount);
   });
 });
