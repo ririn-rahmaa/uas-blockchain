@@ -61,6 +61,7 @@ contract DisasterDonation is ReentrancyGuard {
         external
         onlyAdmin
     {
+        require(account != address(0), "Invalid address");
         require(
             !enabled || !auditors[account],
             "Role conflict"
@@ -82,6 +83,7 @@ contract DisasterDonation is ReentrancyGuard {
         external
         onlyAdmin
     {
+        require(account != address(0), "Invalid address");
         require(
             !enabled || !amils[account],
             "Role conflict"

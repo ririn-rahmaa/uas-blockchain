@@ -354,4 +354,24 @@ describe("DisasterDonation", function () {
       f.donation.connect(f.donor).getContractTokenBalance(),
     ).to.be.revertedWith("Only auditor or regulator");
   });
+
+  it("menolak pemberian role Amil kepada alamat nol", async function () {
+    const f = await deployFixture();
+
+    await expect(
+      f.donation
+        .connect(f.admin)
+        .setAmil("0x0000000000000000000000000000000000000000", true),
+    ).to.be.revertedWith("Invalid address");
+  });
+
+  it("menolak pemberian role Auditor kepada alamat nol", async function () {
+    const f = await deployFixture();
+
+    await expect(
+      f.donation
+        .connect(f.admin)
+        .setAuditor("0x0000000000000000000000000000000000000000", true),
+    ).to.be.revertedWith("Invalid address");
+  });
 });
