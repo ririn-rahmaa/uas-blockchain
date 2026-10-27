@@ -491,4 +491,60 @@ describe("DisasterDonation", function () {
     // Cadangan seharusnya tetap 60 token.
     expect(allocation.reservedAmount).to.equal(firstAmount);
   });
+
+  it("mengembalikan state jika transfer token saat pencairan gagal", async function () {
+    const { ethers } = await network.create();
+
+    const [admin, donor, volunteer, amil, auditor, recipient] =
+      await ethers.getSigners();
+
+    const token = await ethers.deployContract("FailingToken");
+    await token.waitForDeployment();
+
+    const donation = await ethers.deployContract("DisasterDonation", [
+      await token.getAddress(),
+    ]);
+    await donation.waitForDeployment();
+
+    await donation.connect(admin).setVolunteer(volunteer.address, true);
+    await donation.connect(admin).setAmil(amil.address, true);
+    await donation.connect(admin).setAuditor(auditor.address, true);
+
+    const amount = ethers.parseUnits("100", 18);
+    const requestedAmount = ethers.parseUnits("40", 18);
+
+    const recipientHash = ethers.keccak256(ethers.toUtf8Bytes("recipient-dos"));
+    const documentHash = ethers.keccak256(ethers.toUtf8Bytes("document-dos"));
+
+    await token.mint(donor.address, amount);
+    await token.connect(donor).approve(await donation.getAddress(), amount);
+    await donation.connect(donor).donate(amount);
+
+    await donation
+      .connect(volunteer)
+      .submitRecipient(recipientHash, recipient.address, documentHash);
+    await donation.connect(amil).verifyRecipient(recipientHash);
+    await donation.connect(auditor).approveRecipient(recipientHash);
+
+    await donation.connect(amil).allocateDonation(1, recipientHash, amount);
+
+    await donation
+      .connect(amil)
+      .requestDisbursement(1, requestedAmount, documentHash);
+
+    await token.setFailTransfers(true);
+
+    await expect(donation.connect(auditor).approveDisbursement(1)).to.be.revert(
+      ethers,
+    );
+
+    const allocation = await donation.getAllocation(1);
+    const request = await donation.getDisbursement(1);
+    const record = await donation.getDonation(1);
+
+    expect(allocation.reservedAmount).to.equal(requestedAmount);
+    expect(allocation.disbursedAmount).to.equal(0n);
+    expect(request.status).to.equal(0); // PENDING
+    expect(record.disbursedAmount).to.equal(0n);
+  });
 });
