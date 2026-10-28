@@ -547,4 +547,239 @@ describe("DisasterDonation", function () {
     expect(request.status).to.equal(0); // PENDING
     expect(record.disbursedAmount).to.equal(0n);
   });
+  it("menolak deployment dengan alamat token nol", async function () {
+    const { ethers } = await network.create();
+
+    await expect(
+      ethers.deployContract("DisasterDonation", [ethers.ZeroAddress]),
+    ).to.be.revert(ethers);
+  });
+
+  it("menolak pendaftaran penerima dengan hash nol", async function () {
+    const f = await deployFixture();
+
+    const documentHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("document-test"),
+    );
+
+    await expect(
+      f.donation
+        .connect(f.volunteer)
+        .submitRecipient(f.ethers.ZeroHash, f.recipient.address, documentHash),
+    ).to.be.revertedWith("Invalid recipient hash");
+  });
+
+  it("menolak pendaftaran penerima dengan wallet nol", async function () {
+    const f = await deployFixture();
+
+    const recipientHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("recipient-test"),
+    );
+    const documentHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("document-test"),
+    );
+
+    await expect(
+      f.donation
+        .connect(f.volunteer)
+        .submitRecipient(recipientHash, f.ethers.ZeroAddress, documentHash),
+    ).to.be.revertedWith("Invalid wallet");
+  });
+
+  it("menolak pendaftaran penerima dengan hash dokumen nol", async function () {
+    const f = await deployFixture();
+
+    const recipientHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("recipient-test"),
+    );
+
+    await expect(
+      f.donation
+        .connect(f.volunteer)
+        .submitRecipient(recipientHash, f.recipient.address, f.ethers.ZeroHash),
+    ).to.be.revertedWith("Invalid document hash");
+  });
+
+  it("menolak pendaftaran penerima dengan hash yang sudah terdaftar", async function () {
+    const f = await deployFixture();
+
+    const recipientHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("duplicate-recipient"),
+    );
+    const documentHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("recipient-document"),
+    );
+
+    await f.donation
+      .connect(f.volunteer)
+      .submitRecipient(recipientHash, f.recipient.address, documentHash);
+
+    await expect(
+      f.donation
+        .connect(f.volunteer)
+        .submitRecipient(recipientHash, f.recipient.address, documentHash),
+    ).to.be.revertedWith("Recipient exists");
+  });
+
+  it("menolak alokasi dengan ID donasi yang tidak ditemukan", async function () {
+    const f = await deployFixture();
+
+    const recipientHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("recipient-for-invalid-donation"),
+    );
+
+    await f.donation
+      .connect(f.volunteer)
+      .submitRecipient(
+        recipientHash,
+        f.recipient.address,
+        f.ethers.keccak256(f.ethers.toUtf8Bytes("document")),
+      );
+
+    await f.donation.connect(f.amil).verifyRecipient(recipientHash);
+    await f.donation.connect(f.auditor).approveRecipient(recipientHash);
+
+    await expect(
+      f.donation
+        .connect(f.amil)
+        .allocateDonation(999, recipientHash, f.ethers.parseUnits("1", 18)),
+    ).to.be.revertedWith("Donation not found");
+  });
+
+  it("menolak pengajuan pencairan dengan ID alokasi yang tidak ditemukan", async function () {
+    const f = await deployFixture();
+
+    const documentHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("disbursement-document"),
+    );
+
+    await expect(
+      f.donation
+        .connect(f.amil)
+        .requestDisbursement(999, f.ethers.parseUnits("1", 18), documentHash),
+    ).to.be.revertedWith("Allocation not found");
+  });
+
+  it("menolak pengajuan pencairan dengan hash dokumen nol", async function () {
+    const f = await prepareAllocation();
+
+    await expect(
+      f.donation
+        .connect(f.amil)
+        .requestDisbursement(
+          1,
+          f.ethers.parseUnits("1", 18),
+          f.ethers.ZeroHash,
+        ),
+    ).to.be.revertedWith("Invalid document hash");
+  });
+
+  it("menolak penolakan pencairan dengan hash alasan nol", async function () {
+    const f = await prepareAllocation();
+
+    await f.donation
+      .connect(f.amil)
+      .requestDisbursement(1, f.ethers.parseUnits("1", 18), f.documentHash);
+
+    await expect(
+      f.donation.connect(f.auditor).rejectDisbursement(1, f.ethers.ZeroHash),
+    ).to.be.revertedWith("Invalid reason hash");
+  });
+
+  it("menolak pembacaan donasi dengan ID yang tidak ditemukan", async function () {
+    const f = await deployFixture();
+
+    await expect(f.donation.getDonation(999)).to.be.revertedWith(
+      "Donation not found",
+    );
+  });
+
+  it("menolak pembacaan penerima dengan hash yang tidak ditemukan", async function () {
+    const f = await deployFixture();
+
+    const recipientHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("unknown-recipient"),
+    );
+
+    await expect(f.donation.getRecipient(recipientHash)).to.be.revertedWith(
+      "Recipient not found",
+    );
+  });
+
+  it("menolak pembacaan alokasi dengan ID yang tidak ditemukan", async function () {
+    const f = await deployFixture();
+
+    await expect(f.donation.getAllocation(999)).to.be.revertedWith(
+      "Allocation not found",
+    );
+  });
+
+  it("menolak pembacaan pencairan dengan ID yang tidak ditemukan", async function () {
+    const f = await deployFixture();
+
+    await expect(f.donation.getDisbursement(999)).to.be.revertedWith(
+      "Disbursement not found",
+    );
+  });
+
+  it("menolak alokasi dengan nominal nol", async function () {
+    const f = await deployFixture();
+
+    await f.donation.connect(f.donor).donate(f.amount);
+
+    const { recipientHash } = await prepareRecipient(f);
+
+    await expect(
+      f.donation.connect(f.amil).allocateDonation(1, recipientHash, 0),
+    ).to.be.revertedWith("Amount must be positive");
+  });
+
+  it("menolak verifikasi penerima yang tidak ditemukan", async function () {
+    const f = await deployFixture();
+
+    const recipientHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("unknown-recipient"),
+    );
+
+    await expect(
+      f.donation.connect(f.amil).verifyRecipient(recipientHash),
+    ).to.be.revertedWith("Recipient not found");
+  });
+
+  it("menolak verifikasi Amil yang dilakukan dua kali", async function () {
+    const f = await deployFixture();
+    const { recipientHash } = await prepareRecipient(f);
+
+    await expect(
+      f.donation.connect(f.amil).verifyRecipient(recipientHash),
+    ).to.be.revertedWith("Already verified by amil");
+  });
+
+  it("menolak persetujuan auditor sebelum verifikasi Amil", async function () {
+    const f = await deployFixture();
+
+    const recipientHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("recipient-not-verified"),
+    );
+    const documentHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("recipient-document"),
+    );
+
+    await f.donation
+      .connect(f.volunteer)
+      .submitRecipient(recipientHash, f.recipient.address, documentHash);
+
+    await expect(
+      f.donation.connect(f.auditor).approveRecipient(recipientHash),
+    ).to.be.revertedWith("Amil verification required");
+  });
+
+  it("menolak persetujuan auditor yang dilakukan dua kali", async function () {
+    const f = await deployFixture();
+    const { recipientHash } = await prepareRecipient(f);
+
+    await expect(
+      f.donation.connect(f.auditor).approveRecipient(recipientHash),
+    ).to.be.revertedWith("Already auditor verified");
+  });
 });
