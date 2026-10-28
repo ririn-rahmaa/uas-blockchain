@@ -782,4 +782,81 @@ describe("DisasterDonation", function () {
       f.donation.connect(f.auditor).approveRecipient(recipientHash),
     ).to.be.revertedWith("Already auditor verified");
   });
+
+  it("menolak persetujuan pencairan yang sudah ditolak tanpa mengubah state", async function () {
+    const f = await prepareAllocation();
+
+    const requestedAmount = f.ethers.parseUnits("10", 18);
+    const reasonHash = f.ethers.keccak256(
+      f.ethers.toUtf8Bytes("Evidence incomplete"),
+    );
+
+    await f.donation
+      .connect(f.amil)
+      .requestDisbursement(1, requestedAmount, f.documentHash);
+
+    await f.donation.connect(f.auditor).rejectDisbursement(1, reasonHash);
+
+    const balanceBefore = await f.token.balanceOf(f.recipient.address);
+
+    await expect(
+      f.donation.connect(f.auditor).approveDisbursement(1),
+    ).to.be.revertedWith("Request is not pending");
+
+    const request = await f.donation.getDisbursement(1);
+    const allocation = await f.donation.getAllocation(1);
+    const balanceAfter = await f.token.balanceOf(f.recipient.address);
+
+    expect(request.status).to.equal(2); // REJECTED
+    expect(allocation.reservedAmount).to.equal(0n);
+    expect(allocation.disbursedAmount).to.equal(0n);
+    expect(balanceAfter).to.equal(balanceBefore);
+  });
+
+  it("membatalkan donasi dan tidak menyimpan record jika transfer token gagal", async function () {
+    const { ethers } = await network.create();
+    const [admin, donor] = await ethers.getSigners();
+
+    const token = await ethers.deployContract("FailingToken");
+    await token.waitForDeployment();
+
+    const donation = await ethers.deployContract("DisasterDonation", [
+      await token.getAddress(),
+    ]);
+    await donation.waitForDeployment();
+
+    const amount = ethers.parseUnits("100", 18);
+
+    await token.mint(donor.address, amount);
+    await token.connect(donor).approve(await donation.getAddress(), amount);
+
+    await token.setFailTransfers(true);
+
+    await expect(donation.connect(donor).donate(amount)).to.be.revert(ethers);
+
+    expect(await donation.nextDonationId()).to.equal(1n);
+
+    await expect(donation.getDonation(1)).to.be.revertedWith(
+      "Donation not found",
+    );
+
+    expect(await token.balanceOf(await donation.getAddress())).to.equal(0n);
+  });
+
+  it("menolak nominal pencairan maksimum yang melebihi sisa alokasi", async function () {
+    const f = await prepareAllocation();
+
+    const maxAmount = f.ethers.MaxUint256;
+
+    await expect(
+      f.donation
+        .connect(f.amil)
+        .requestDisbursement(1, maxAmount, f.documentHash),
+    ).to.be.revertedWith("Insufficient allocation balance");
+
+    const allocation = await f.donation.getAllocation(1);
+
+    expect(allocation.reservedAmount).to.equal(0n);
+    expect(allocation.disbursedAmount).to.equal(0n);
+  });
 });

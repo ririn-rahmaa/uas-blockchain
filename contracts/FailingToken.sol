@@ -25,4 +25,15 @@ contract FailingToken is ERC20 {
         require(!failTransfers, "Transfer failed");
         return super.transfer(to, value);
     }
+
+    
+function transferFrom(
+    address from,
+    address to,
+    uint256 value
+) public override returns (bool) {
+    require(!failTransfers, "Transfer failed");
+    return super.transferFrom(from, to, value);
+}
+
 }
