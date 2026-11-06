@@ -33,17 +33,17 @@ Token ERC-20 untuk simulasi donasi. Kontrak mencetak token awal kepada pemilik s
 
 Kontrak utama yang mengelola alur donasi dan penyaluran bantuan. Kontrak menggunakan struktur data `Donation`, `Recipient`, `Allocation`, dan `Disbursement`, serta enumerasi status donasi dan pencairan.
 
-DonationStatus 
+DonationStatus
+
 - RECEIVED = 0
 - ALLOCATED = 1
 - DISBURSED = 2
 
 DisbursementStatus
+
 - PENDING = 0
 - APPROVED = 1
 - REJECTED = 2
-
-
 
 Komponen OpenZeppelin yang digunakan meliputi:
 
@@ -76,7 +76,7 @@ uas-blockchain/
 │   └── deploy-demo.js
 ├── test/
 │   └── DisasterDonation.js
-├── hardhat.config.js
+├── hardhat.config.ts
 ├── package.json
 └── README.md
 ```
@@ -84,11 +84,13 @@ uas-blockchain/
 ## 6. Instalasi
 
 Pastikan Node.js dan npm sudah terpasang.
+
 ```bash
 npm install
 ```
 
 Kompilasi Smart Contract
+
 ```bash
 npx hardhat compile
 ```
@@ -96,17 +98,21 @@ npx hardhat compile
 Menjalankan Blockchain Lokal
 
 Buka terminal pertama:
+
 ```bash
 npx hardhat node
 ```
+
 Blockchain lokal berjalan pada endpoint http://127.0.0.1:8545
 
 Menjalankan Script Demo
 
 Buka terminal kedua, lalu jalankan:
+
 ```bash
 npx hardhat run scripts/deploy-demo.js --network localhost
 ```
+
 Perintah ini digunakan untuk menjalankan demo deployment dan alur transaksi pada jaringan lokal, jika konfigurasi Hardhat mendukung network localhost tersebut.
 
 ## 7. Menjalankan Unit Test
@@ -156,4 +162,3 @@ Event dapat diperiksa melalui transaction receipt untuk membantu memverifikasi a
 - Deployment yang dibahas dilakukan pada blockchain lokal.
 - Alamat kontrak dan transaction hash bergantung pada hasil deployment masing-masing.
 - Integrasi frontend/client dan penyimpanan data off-chain perlu dinilai berdasarkan implementasi aktual.
-
