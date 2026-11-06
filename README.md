@@ -1,164 +1,205 @@
-# Blockchain Donation & Disbursement Prototype
+**Gambaran Umum**
 
-Prototipe smart contract untuk pencatatan donasi dan penyaluran bantuan berbasis blockchain. Sistem mengatur penerimaan donasi, verifikasi penerima, alokasi dana, serta persetujuan pencairan melalui pembagian hak akses.
+DonasiChain merupakan prototipe sistem donasi dan penyaluran bantuan bencana alam berbasis blockchain. Sistem ini menggunakan smart contract untuk mengelola penerimaan donasi, verifikasi penerima, alokasi dana, dan persetujuan penyaluran berdasarkan hak akses pengguna.
 
-## 1. Teknologi
+Prototipe menggunakan token ERC-20 simulasi dan blockchain lokal Hardhat untuk pengujian.
 
-- Solidity `0.8.34`
-- Hardhat `3.21.0`
-- OpenZeppelin `5.6.1`
-- JavaScript, Mocha, dan Chai untuk unit testing
-- ERC-20 untuk representasi token donasi dalam simulasi
-- Local blockchain untuk pengujian dan demonstrasi
-
-## 2. Fitur Utama
+**Fitur Utama**
 
 - Penerimaan donasi menggunakan token ERC-20.
 - Pendaftaran dan verifikasi penerima bantuan.
-- Alokasi donasi kepada penerima terverifikasi.
-- Pengajuan pencairan oleh amil.
+- Alokasi dana kepada penerima terverifikasi.
+- Pengajuan pencairan dana oleh amil.
 - Persetujuan atau penolakan pencairan oleh auditor.
-- Pembatasan fungsi berdasarkan role.
-- Pencatatan aktivitas penting melalui event.
-- Validasi nominal, ketersediaan dana, dan status transaksi.
-- Pencegahan pencairan ganda pada pengajuan yang sama.
+- Pembatasan akses berdasarkan role pengguna.
+- Pencatatan aktivitas transaksi melalui event blockchain.
+- Validasi nominal, ketersediaan dana, dan status transaksi
+- Pencegahan pencarian ganda pada pengajuan yang sama
 
-## 3. Smart Contract
+**Teknologi yang Digunakan**
+
+| Teknologi          | Fungsi                               |
+| :----------------- | :----------------------------------- |
+| Solidity 0.8.34    | Pengembangan smart contract          |
+| Hardhat 3.21.0     | Development dan pengujian blockchain |
+| OpenZeppelin 5.6.1 | Library smart contract               |
+| JavaScript         | Script deployment                    |
+| Mocha dan Chai     | Unit testing                         |
+| MetaMask           | Koneksi wallet                       |
+| ERC-20             | Standar token donasi                 |
+
+**Smart Contract**
 
 ### `MockToken.sol`
 
-Token ERC-20 untuk simulasi donasi. Kontrak mencetak token awal kepada pemilik saat deployment dan membatasi fungsi pencetakan tambahan berdasarkan kepemilikan.
+Smart contract token ERC-20 yang digunakan untuk simulasi donasi.
 
 ### `DisasterDonation.sol`
 
-Kontrak utama yang mengelola alur donasi dan penyaluran bantuan. Kontrak menggunakan struktur data `Donation`, `Recipient`, `Allocation`, dan `Disbursement`, serta enumerasi status donasi dan pencairan.
+Smart contract utama yang mengelola penerimaan donasi, pendaftaran dan verifikasi penerima, alokasi dana, serta proses persetujuan dan pencairan bantuan.
 
-DonationStatus
+**Alur Penggunaan Berdasarkan Role**
 
-- RECEIVED = 0
-- ALLOCATED = 1
-- DISBURSED = 2
+Setiap pengguna menghubungkan wallet MetaMask dan menggunakan akun yang sesuai dengan role-nya. Transaksi yang memerlukan perubahan data blockchain harus dikonfirmasi melalui MetaMask.
 
-DisbursementStatus
+| Role      | Aktivitas                                                                         |
+| --------- | --------------------------------------------------------------------------------- |
+| Admin     | Mengatur role pengguna                                                            |
+| Donatur   | Memberikan donasi melalui token DRT dan mengonfirmasi transaksi melalui MetaMask. |
+| Volunteer | Mendaftarkan calon penerima bantuan.                                              |
+| Amil      | Memverifikasi penerima, mengalokasikan dana, dan mengajukan pencairan.            |
+| Auditor   | Menyetujui atau menolak penerima dan pengajuan pencairan.                         |
+| Regulator | Melihat riwayat aktivitas dan audit trail blockchain.                             |
 
-- PENDING = 0
-- APPROVED = 1
-- REJECTED = 2
+**Struktur Proyek**
 
-Komponen OpenZeppelin yang digunakan meliputi:
+uas-blockchain/  
+├── artifacts/  
+├── cache/  
+├── contracts/  
+│ ├── DisasterDonation.sol  
+│ └── MockToken.sol  
+├── evidence/  
+├── frontend/  
+│ ├── app.js  
+│ ├── index.html  
+│ └── style.css  
+├── scripts/  
+│ ├── deploy-demo.js  
+│ ├── transfer-token.js  
+│ └── verify-donation.js  
+├── test/  
+│ └── DisasterDonation.js  
+├── types/  
+├── .gitignore  
+├── hardhat.config.ts  
+├── package-lock.json  
+├── package.json  
+├── README-DonasiChain.md  
+├── README.md  
+└── tsconfig.json
 
-- `ERC20` dan `Ownable` untuk token simulasi.
-- `IERC20` sebagai interface token.
-- `SafeERC20` untuk operasi transfer token.
-- `ReentrancyGuard` untuk perlindungan terhadap reentrancy pada fungsi yang menggunakannya.
+## **Prasyarat**
 
-## 4. Alur Transaksi
+Sebelum menjalankan DonasiChain, pastikan perangkat berikut sudah tersedia:
 
-1. Donatur memberikan persetujuan token dan melakukan donasi.
-2. Relawan mendaftarkan calon penerima.
-3. Amil memverifikasi penerima.
-4. Auditor menyetujui penerima.
-5. Amil mengalokasikan dana kepada penerima.
-6. Amil mengajukan pencairan.
-7. Auditor menyetujui atau menolak pencairan.
-8. Jika disetujui, token ditransfer kepada penerima. Jika ditolak, reservasi dana dilepas.
+- Node.js dan npm
+- Git
+- MetaMask pada browser
+- Visual Studio Code
 
-Status donasi yang digunakan adalah `RECEIVED`, `ALLOCATED`, dan `DISBURSED`. Status pencairan adalah `PENDING`, `APPROVED`, dan `REJECTED`.
+**Instalasi**
 
-## 5. Struktur Proyek
+Clone repository dan masuk ke direktori proyek:
 
-```text
-uas-blockchain/
-├── contracts/
-│   ├── MockToken.sol
-│   └── DisasterDonation.sol
-├── scripts/
-│   └── deploy-demo.js
-├── test/
-│   └── DisasterDonation.js
-├── hardhat.config.ts
-├── package.json
-└── README.md
-```
+`git clone https://github.com/ririn-rahmaa/uas-blockchain.git`
 
-## 6. Instalasi
+`cd uas-blockchain`
 
-Pastikan Node.js dan npm sudah terpasang.
+Instal seluruh dependency:
 
-```bash
-npm install
-```
+`npm install`
 
-Kompilasi Smart Contract
+**Menjalankan blockchain local**
 
-```bash
-npx hardhat compile
-```
+Buka terminal di direktori utama proyek, kemudian jalankan:
 
-Menjalankan Blockchain Lokal
+`npx hardhat node`
 
-Buka terminal pertama:
+Hardhat akan menjalankan jaringan blockchain lokal pada:
 
-```bash
-npx hardhat node
-```
+[`http://127.0.0.1:8545`](http://127.0.0.1:8545)
 
-Blockchain lokal berjalan pada endpoint http://127.0.0.1:8545
+Jaringan ini menggunakan Chain ID `31337` dan menyediakan akun pengujian beserta saldo ETH lokal.
 
-Menjalankan Script Demo
+Biarkan terminal tetap berjalan selama proses pengujian.
 
-Buka terminal kedua, lalu jalankan:
+**Deployment Smart Contract**
 
-```bash
-npx hardhat run scripts/deploy-demo.js --network localhost
-```
+Buka terminal kedua di direktori utama proyek, kemudian jalankan:
 
-Perintah ini digunakan untuk menjalankan demo deployment dan alur transaksi pada jaringan lokal, jika konfigurasi Hardhat mendukung network localhost tersebut.
+`npx hardhat run scripts/deploy-demo.js --network localhost`
 
-## 7. Menjalankan Unit Test
+Script tersebut menjalankan deployment dan demo transaksi pada jaringan Hardhat Local.
 
-Jalankan seluruh unit test dengan:
+Catat alamat contract `MockToken` dan `DisasterDonation` serta transaction hash yang dihasilkan.
 
-```bash
-npx hardhat test
-```
+Catatan: alamat contract dapat berubah ketika jaringan lokal di-reset dan deployment dilakukan kembali.
 
-Pengujian yang telah dilakukan mencakup 12 skenario, meliputi:
+**Pengujian otomatis**
 
-- Penerimaan donasi.
-- Penolakan alokasi melebihi dana tersedia.
-- Pembatasan akses auditor.
-- Penolakan pencairan dan pelepasan reservasi.
-- Transfer token kepada penerima.
-- Validasi penerima terverifikasi.
-- Validasi nominal nol.
-- Pencegahan pencairan ganda.
-- Pencairan sebagian dan penuh.
-- Pengajuan ulang setelah pencairan sebelumnya ditolak.
+Jalankan seluruh unit test dengan perintah:
 
-**Hasil pengujian terakhir yang dilaporkan:** `12 passing`.
+`npx hardhat test`
 
-Jalankan kembali pengujian setelah perubahan kode untuk memastikan hasil tersebut masih berlaku.
+File pengujian berada di:
 
-## 8. Demo Deployment Lokal
+`test/DisasterDonation.js`
 
-Proyek menggunakan script `scripts/deploy-demo.js` untuk mendemonstrasikan alur donasi dan pencairan pada blockchain lokal.
+Pengujian diantaranya meliputi validasi donasi, pembatasan akses berdasarkan role, alokasi dana, persetujuan pencairan, dan pencegahan pencairan ganda.
 
-Konfigurasi jaringan lokal menggunakan endpoint:
+**Menjalankan proyek**
 
-```text
-http://127.0.0.1:8545
-```
+Buka terminal baru di direktori utama proyek, kemudian jalankan:
 
-## 9. Event dan Verifikasi
+`npx serve frontend`
 
-Event antara lain `DonationReceived` dan `DisbursementApproved`.
+Perintah tersebut menjalankan frontend melalui server lokal. Buka alamat lokal yang ditampilkan pada terminal menggunakan browser.
 
-Event dapat diperiksa melalui transaction receipt untuk membantu memverifikasi aktivitas kontrak. Perubahan status dan saldo token juga dapat digunakan sebagai bukti hasil transaksi.
+**Konfigurasi MetaMask**
 
-## 10. Batasan Prototipe
+Tambahkan jaringan Hardhat Local pada MetaMask dengan konfigurasi berikut:
+
+| Pengaturan      | Nilai                   |
+| --------------- | ----------------------- |
+| Network Name    | Hardhat Local           |
+| RPC URL         | `http://127.0.0.1:8545` |
+| Chain ID        | `31337`                 |
+| Currency Symbol | ETH                     |
+
+Untuk menggunakan akun pengujian:
+
+1. Salin private key salah satu akun dari terminal Hardhat Local.
+2. Buka MetaMask dan pilih Import Account.
+3. Masukkan private key akun pengujian.
+4. Pastikan jaringan yang dipilih adalah Hardhat Local.
+
+Menghubungkan wallet ke aplikasi:
+
+1. Buka frontend
+2. Klik tombol MetaMak
+3. Pilih akun yang akan digunakan
+4. Konfirmasi permintaan koneksi
+5. Periksa alamat wallet dan role yang ditampilkan aplikasi
+
+**Transfer token**
+
+Buka terminal baru di proyek:
+
+jalankan script transfer token dari admin ke donatur, agar donatur bisa melakukan donasi:
+
+`npx hardhat run scripts/transfer-token.js –network localhost`
+
+**Verifikasi transaksi**
+
+jalankan script verify-donation, untuk memverifikasi transaksi:
+
+`npx hardhat run scripts/verify-donation.js –network localhost`
+
+**Troubleshooting**
+
+| Masalah                     | Penanganan                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| MetaMask tidak terdeteksi   | Pastikan ekstensi MetaMask aktif.                                             |
+| Wrong network               | Pilih jaringan Hardhat Local (Chain ID 31337).                                |
+| Alamat kontrak tidak sesuai | Periksa hasil deployment dan konfigurasi alamat kontrak pada frontend.        |
+| Insufficient funds          | Pastikan akun memiliki ETH lokal untuk gas dan token DRT untuk donasi.        |
+| Transaksi gagal             | Periksa role, saldo token, allowance, status penerima, dan nominal transaksi. |
+| Panel tidak muncul          | Periksa role akun yang terhubung.                                             |
+| Kontrak tidak merespons     | Pastikan Hardhat Local berjalan dan kontrak sudah di-deploy.                  |
+
+## **Batasan Prototipe**
 
 - Token yang digunakan merupakan token simulasi, bukan uang nyata.
-- Deployment yang dibahas dilakukan pada blockchain lokal.
-- Alamat kontrak dan transaction hash bergantung pada hasil deployment masing-masing.
-- Integrasi frontend/client dan penyimpanan data off-chain perlu dinilai berdasarkan implementasi aktual.
+- Deployment dilakukan pada jaringan blockchain lokal Hardhat.
+- Alamat smart contract dan transaction hash bergantung pada hasil deployment masing-masing.
