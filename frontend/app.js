@@ -94,6 +94,21 @@ function updateRolePanels(roleText) {
   document.querySelectorAll("[data-requires-wallet]").forEach((panel) => {
     panel.hidden = !account || roles.length > 0;
   });
+
+  const isAmil = roles.includes("Amil");
+  const canAudit = roles.includes("Auditor") || roles.includes("Regulator");
+
+  const connected = Boolean(account && donation);
+
+  const disbursementBtn = $("submitDisbursementBtn");
+  if (disbursementBtn) {
+    disbursementBtn.disabled = !(isAmil && connected);
+  }
+
+  const auditBtn = $("loadAuditTrailBtn");
+  if (auditBtn) {
+    auditBtn.disabled = !(canAudit && connected);
+  }
 }
 
 async function submitDonation() {
@@ -293,6 +308,11 @@ async function loadAuditTrail() {
       throw Error("Fitur audit hanya untuk Auditor atau Regulator.");
     }
 
+    const activeRoles = [];
+
+    if (isAuditor) activeRoles.push("Auditor");
+    if (isRegulator) activeRoles.push("Regulator");
+
     button.disabled = true;
     setMessage(
       "auditTrailMessage",
@@ -369,7 +389,6 @@ async function loadAuditTrail() {
               a.recipientHash,
             )} · Verifikator ${shortHash(a.verifier)}`,
             status: `Diverifikasi (${a.verifierRole})`,
-            allowedRoles: ["Amil", "Auditor"],
           };
 
         case "DonationAllocated":
@@ -379,7 +398,6 @@ async function loadAuditTrail() {
               a.donationId
             } · ${fmt(a.amount)} DRT · Penerima ${shortHash(a.recipientHash)}`,
             status: "Dialokasikan",
-            allowedRoles: ["Amil"],
           };
 
         case "DisbursementRequested":
@@ -389,7 +407,6 @@ async function loadAuditTrail() {
               a.allocationId
             } · ${fmt(a.amount)} DRT`,
             status: "Menunggu persetujuan",
-            allowedRoles: ["Amil"],
           };
 
         case "DisbursementApproved":
@@ -399,7 +416,6 @@ async function loadAuditTrail() {
               a.amount,
             )} DRT · Penerima ${shortHash(a.recipientWallet)}`,
             status: "Disetujui / ditransfer",
-            allowedRoles: ["Auditor"],
           };
 
         case "DisbursementRejected":
@@ -409,7 +425,6 @@ async function loadAuditTrail() {
               a.auditor,
             )} · Hash alasan ${shortHash(a.reasonHash)}`,
             status: "Ditolak",
-            allowedRoles: ["Auditor"],
           };
 
         default:
@@ -423,13 +438,6 @@ async function loadAuditTrail() {
 
     for (const event of events.slice().reverse()) {
       const info = describeEvent(event);
-
-      if (
-        info.allowedRoles &&
-        !info.allowedRoles.some((role) => activeRoles.includes(role))
-      ) {
-        continue;
-      }
 
       const row = body.insertRow();
 
@@ -474,7 +482,9 @@ async function loadAuditTrail() {
       "error",
     );
   } finally {
-    button.disabled = false;
+    if (button) {
+      button.disabled = false;
+    }
   }
 }
 

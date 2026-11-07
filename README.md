@@ -19,7 +19,7 @@ Prototipe menggunakan token ERC-20 simulasi dan blockchain lokal Hardhat untuk p
 **Teknologi yang Digunakan**
 
 | Teknologi          | Fungsi                               |
-| :----------------- | :----------------------------------- |
+| ------------------ | ------------------------------------ |
 | Solidity 0.8.34    | Pengembangan smart contract          |
 | Hardhat 3.21.0     | Development dan pengujian blockchain |
 | OpenZeppelin 5.6.1 | Library smart contract               |
@@ -178,13 +178,16 @@ Buka terminal baru di proyek:
 
 jalankan script transfer token dari admin ke donatur, agar donatur bisa melakukan donasi:
 
-`npx hardhat run scripts/transfer-token.js –network localhost`
+`npx hardhat run scripts/transfer-token.js --network localhost`
+
+**Hash Dokumen Pendukung**
+`node scripts/hash-file.js "Dokumen pendukung penerima donasi.pdf"`
 
 **Verifikasi transaksi**
 
 jalankan script verify-donation, untuk memverifikasi transaksi:
 
-`npx hardhat run scripts/verify-donation.js –network localhost`
+`npx hardhat run scripts/verify-donation.js --network localhost`
 
 **Troubleshooting**
 

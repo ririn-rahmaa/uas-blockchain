@@ -1,11 +1,10 @@
-
 import { network } from "hardhat";
 
-const { ethers } = await network.connect();
+const { ethers } = await network.create();
 
 async function main() {
   const txHash =
-    "0xacd7b66081eda374b3d3474c581c8b1072ed3dadf9e867f984d8cb0bf9c45a6a";
+    "0x74a6ca699fb124decccbf5968ef776576b2dc1b1bc8ef4814239ae4554dd310b";
 
   const receipt = await ethers.provider.getTransactionReceipt(txHash);
 
@@ -15,12 +14,15 @@ async function main() {
   }
 
   console.log("Transaction hash :", receipt.hash);
-  console.log("Status           :", receipt.status === 1 ? "Berhasil" : "Gagal");
+  console.log(
+    "Status           :",
+    receipt.status === 1 ? "Berhasil" : "Gagal",
+  );
   console.log("Block number     :", receipt.blockNumber);
   console.log("Contract address :", receipt.to);
 
   const iface = new ethers.Interface([
-    "event DonationReceived(uint256 indexed donationId, address indexed donor, uint256 amount)"
+    "event DonationReceived(uint256 indexed donationId, address indexed donor, uint256 amount)",
   ]);
 
   let found = false;
@@ -29,7 +31,7 @@ async function main() {
     try {
       const event = iface.parseLog({
         topics: log.topics,
-        data: log.data
+        data: log.data,
       });
 
       if (event?.name === "DonationReceived") {
